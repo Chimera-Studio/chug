@@ -3,13 +3,23 @@
     "name": "Chug",
     "slug": "Chug",
     "version": "1.0.0",
+    "description": "Chug is a perfect party starter drinking game meant to be played with others. You will discover funny, interesting and weird things you didn't know about your friends.",
+    "owner": "ddario",
+    "privacy": "unlisted",
+    "githubUrl": "https://github.com/dariodumlijan/ReactNative_Chug.git",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "backgroundColor": "#ffffff",
+    "primaryColor": "#ffffff",
+    "icon": "./app/assets/icon.png",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
+      "image": "./app/assets/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -17,16 +27,28 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+      "bundleIdentifier": "com.chimerastudio.chugios",
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "We use Tracking to fix bugs and improve your experience while using our App."
+      },
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-6627549364207364~8268640511"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "android": {
+      "package": "com.chimerastudio.chug",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.chimerastudio.chug",
+      "versionCode": 1,
+      "permissions": [],
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-6627549364207364~6611032818",
+        "googleMobileAdsAutoInit": false
+      }
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive"
     }
   }
 }
