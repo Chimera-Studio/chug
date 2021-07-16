@@ -127,16 +127,33 @@ var topicList = [
 	},
 ];
 
+var presetList = [
+	{
+		title: "This is a Preset 1 test",
+		selected: false,
+	},
+	{
+		title: "This is a Preset 2 long test name to see the result",
+		selected: false,
+	},
+	{
+		title: "Preset 3",
+		selected: false,
+	},
+];
+
 var rewardList = [];
 
 var selectedStates = topicList.map(({ selected }) => selected);
 var unlockedStates = topicList.map(({ unlocked }) => unlocked);
+var selectedPresetStates = presetList.map(({ selected }) => selected);
 var customListPrompts = custom_list.slice();
 var rewardListName;
 var rewardListVal;
 var rewardIndex;
 var rewardDisabled = false;
 var gameCounter = 0;
+var consentStatus = true;
 var languagePref = "eng";
 var personalisedAds = false;
 
@@ -290,6 +307,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 
 	function unlockTopic() {
 		topicList[rewardIndex].unlocked = true;
+		unlockedStates = topicList.map(({ unlocked }) => unlocked);
 		rewardEarned = true;
 
 		checkTopicList();
@@ -315,9 +333,12 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 			</TouchableOpacity>
 
 			<View style={styles.selectReward}>
-				<Text style={styles.rewardTitle}>
-					Choose the library you want:
-				</Text>
+				{language == "eng" ? (
+					<Text style={styles.rewardTitle}>Choose a topic:</Text>
+				) : (
+					<Text style={styles.rewardTitle}>Odaberi kategoriju:</Text>
+				)}
+
 				<TouchableOpacity
 					activeOpacity={0.6}
 					style={styles.selectRewardInput}
@@ -332,10 +353,39 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 			</View>
 
 			<View style={styles.rewardedExp}>
-				<Text style={styles.rewardedExpText}>
-					To get the chosen library
-				</Text>
-				<Text style={styles.rewardedExpText}>watch this Advert:</Text>
+				{language == "eng" ? (
+					<Text style={styles.rewardedExpText}>
+						To unlock it,{"\n"}
+						watch this Advert:
+					</Text>
+				) : (
+					<Text style={styles.rewardedExpText}>
+						Da otključaš,{"\n"}
+						pogledaj jednu Reklamu:
+					</Text>
+				)}
+				{language == "eng" ? (
+					<Text style={styles.rewardedExp2Text}>
+						The unlocked topics will be available for{" "}
+						<Text style={{ color: colors.primary }}>24h</Text>
+						{"\n"}
+						from{" "}
+						<Text style={{ color: colors.primary }}>
+							the last one
+						</Text>{" "}
+						that you unlocked.
+					</Text>
+				) : (
+					<Text style={styles.rewardedExp2Text}>
+						Otključane kategorije biti će dostupne{" "}
+						<Text style={{ color: colors.primary }}>24h</Text>
+						{"\n"}
+						od <Text style={{ color: colors.primary }}>
+							zadnje
+						</Text>{" "}
+						otključane.
+					</Text>
+				)}
 			</View>
 			<TouchableOpacity
 				style={
@@ -347,15 +397,27 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 				disabled={loadRewarded || openSelect ? true : false}
 				onPress={() => requestReward()}
 			>
-				{!loadRewarded ? (
+				{!loadRewarded && language == "eng" ? (
 					<Text style={styles.rewardedStartText}>Watch the Ad</Text>
-				) : (
-					<ActivityIndicator size="large" color={colors.grayLight} />
-				)}
+				) : null}
+				{!loadRewarded && language == "hrv" ? (
+					<Text style={styles.rewardedStartText}>
+						Pogledaj reklamu
+					</Text>
+				) : null}
+				{loadRewarded ? (
+					<ActivityIndicator size="large" color={colors.white} />
+				) : null}
 			</TouchableOpacity>
-			<Text style={styles.rewardedDisc}>
-				If no Advert is shown come back a bit later
-			</Text>
+			{language == "eng" ? (
+				<Text style={styles.rewardedDisc}>
+					If no Advert is shown come back a bit later.
+				</Text>
+			) : (
+				<Text style={styles.rewardedDisc}>
+					Ako se ne prikaže reklama, vrati se kasnije.
+				</Text>
+			)}
 
 			{!openSelect ? null : (
 				<View style={styles.selectListShadow}>
@@ -415,6 +477,35 @@ export const Exit = () => {
 				d="M242.7,176L342.8,75.9c12.3-12.3,12.3-32.2,0-44.5L320.6,9.2c-12.3-12.3-32.2-12.3-44.5,0L176,109.3L75.9,9.2 C63.7-3.1,43.7-3.1,31.5,9.2L9.2,31.4c-12.3,12.3-12.3,32.2,0,44.5L109.3,176L9.2,276.1c-12.3,12.3-12.3,32.2,0,44.5l22.2,22.2 c12.3,12.3,32.2,12.3,44.5,0L176,242.7l100.1,100.1c12.3,12.3,32.2,12.3,44.5,0l22.2-22.2c12.3-12.3,12.3-32.2,0-44.5L242.7,176z"
 			/>
 		</Svg>
+	);
+};
+
+export const ConsentScreen = ({ consentCallback }) => {
+	return (
+		<View style={styles.consentWrapper}>
+			<Text style={styles.consentTitle}>Drink Responsibly!</Text>
+			<Text style={styles.consentTxt}>
+				Please drink responsibly.{"\n"}
+				{"\n"}
+				This is a party game, for entertainment purposes only.{"\n"}
+				{"\n"}
+				Know your limit!{"\n"}
+				{"\n"}
+				We do not promote underage or irresponsible drinking and/or use
+				of any other substances.{"\n"}
+				{"\n"}
+				By continuing, you agree that you are responsible for any
+				consequences that may result from the use of this app (Chug -
+				Perfect Party Starter).
+			</Text>
+			<TouchableHighlight
+				style={styles.consentBtn}
+				underlayColor={colors.disabled}
+				onPress={() => consentCallback(false)}
+			>
+				<Text style={styles.consentBtnTxt}>Agree</Text>
+			</TouchableHighlight>
+		</View>
 	);
 };
 
@@ -502,12 +593,17 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 	const [selectedTopics, setSelectedTopics] = useState(selectedStates);
 	const [unlockedTopics, setUnlockedTopics] = useState(unlockedStates);
+	const [selectedPreset, setSelectedPreset] = useState(selectedPresetStates);
+
+	useEffect(() => {
+		unlockedStates = topicList.map(({ unlocked }) => unlocked);
+		setUnlockedTopics(unlockedStates);
+	}, []);
 
 	const [gamePrompt, setGamePrompt] = useState("");
 	const [againWait, setAgainWait] = useState(false);
 
 	const [fillAgain, setFillAgain] = useState(new Animated.Value(0));
-
 	function fillEffect() {
 		fillAgain.setValue(60);
 		Animated.timing(fillAgain, {
@@ -526,6 +622,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [presetModul, setPresetModul] = useState(false);
 
 	const [customTopic, setCustomTopic] = useState(false);
+	const [customPreset, setCustomPreset] = useState(true);
 	const [customPrompt, setCustomPrompt] = useState("");
 	const [customListMap, setCustomListMap] = useState(customListPrompts);
 	var customOpen = false;
@@ -551,6 +648,17 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 		selectedStates = topicList.map(({ selected }) => selected);
 		setSelectedTopics(selectedStates);
+	};
+
+	const selectPreset = (selected, index) => {
+		if (!selected) {
+			presetList[index].selected = true;
+		} else {
+			presetList[index].selected = false;
+		}
+
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedPreset(selectedPresetStates);
 	};
 
 	const [opacityConfig, setOpacityConfig] = useState(new Animated.Value(1));
@@ -597,7 +705,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			easing: Easing.linear,
 		}).start();
 	}
-
 	const fadeConfig = {
 		opacity: opacityConfig,
 		zIndex: opacityConfig,
@@ -610,7 +717,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		opacity: opacityMore,
 		zIndex: opacityMore,
 	};
-
 	const toggleMoreModul = (boleon) => {
 		customMoreOpen = boleon;
 		customiseEffect();
@@ -620,7 +726,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [slideCustom, setSlideCustom] = useState(
 		new Animated.Value(useWidth)
 	);
-
 	function slideEffect() {
 		var fadeConfigVal = 0;
 		var fadeGameVal = 0;
@@ -846,7 +951,9 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 									) : (
 										<Text
 											style={
-												!selectedTopics[index]
+												!unlockedTopics[index]
+													? styles.topicItemTxtDisabled
+													: !selectedTopics[index]
 													? styles.topicItemTxt
 													: styles.topicItemTxtSelected
 											}
@@ -923,108 +1030,189 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						</TouchableOpacity>
 					</View>
 				</Animated.View>
-				<Animated.View
-					style={[styles.gamePageConfig, moveCustom, fadeConfig]}
-				>
-					<View style={styles.inputCont}>
-						{language == "eng" ? (
-							<Text style={styles.inputExp}>
-								Add your own prompts:
-							</Text>
-						) : (
-							<Text style={styles.inputExp}>
-								Dodaj svoja pravila:
-							</Text>
-						)}
-						<View style={styles.inputFieldCont}>
-							<TextInput
-								style={styles.inputField}
-								onChangeText={(customPrompt) =>
-									customInputUpdate(customPrompt)
-								}
-								onSubmitEditing={addPrompt}
-								onBlur={blurCustom}
-								onFocus={focusCustom}
-								value={customPrompt}
-								multiline={false}
-							/>
-							<TouchableHighlight
-								onPress={addPrompt}
-								underlayColor={colors.white}
-								style={styles.inputFieldBtn}
-							>
-								<Text style={styles.inputFieldBtnTxt}>+</Text>
-							</TouchableHighlight>
-						</View>
-					</View>
-					<View style={styles.customListWrapper}>
+				{customPreset ? (
+					<Animated.View
+						style={[styles.gamePageConfig, moveCustom, fadeConfig]}
+					>
 						<ScrollView
 							showsVerticalScrollIndicator={true}
-							style={styles.customList}
-							contentContainerStyle={styles.customListCont}
+							style={styles.presetScroll}
+							contentContainerStyle={styles.presetScrollCont}
 							centerContent={true}
 						>
-							{customListMap.map((prompt, index) => (
-								<TouchableOpacity
-									activeOpacity={0.6}
+							{presetList.map((preset, index) => (
+								<TouchableHighlight
+									underlayColor={colors.white}
+									style={
+										!selectedPreset[index]
+											? styles.presetItem
+											: styles.presetItemSelected
+									}
 									key={index}
-									onPress={() => deletePrompt(index)}
+									onPress={() =>
+										selectPreset(preset.selected, index)
+									}
 								>
-									<View style={styles.customPromptCont}>
-										<View
-											style={styles.customPromptTxtCont}
-										>
-											<Text
-												style={styles.customPromptTxt}
-											>
-												{prompt}
-											</Text>
-										</View>
-										<View
-											style={styles.customPrompIconCont}
-										>
-											<Exit
-												style={styles.customPromptIcon}
-											/>
-										</View>
-									</View>
-								</TouchableOpacity>
+									<Text
+										style={
+											!selectedPreset[index]
+												? styles.presetItemTxt
+												: styles.presetItemTxtSelected
+										}
+									>
+										{preset.title}
+									</Text>
+								</TouchableHighlight>
 							))}
 						</ScrollView>
-					</View>
-					<View style={styles.bottomBtnCont}>
-						<TouchableHighlight
-							underlayColor={colors.white}
-							style={styles.bottomBtnPrimary}
-							onPress={startGame}
-						>
+						<View style={styles.bottomBtnCont}>
+							<TouchableHighlight
+								underlayColor={colors.white}
+								style={styles.bottomBtnPrimary}
+								onPress={startGame}
+							>
+								{language == "eng" ? (
+									<Text style={styles.bottomBtnPrimaryTxt}>
+										Begin
+									</Text>
+								) : (
+									<Text style={styles.bottomBtnPrimaryTxt}>
+										Kreni
+									</Text>
+								)}
+							</TouchableHighlight>
+							<TouchableHighlight
+								underlayColor={colors.white}
+								style={styles.bottomSecondary}
+								onPress={() => setCustomPreset(false)}
+							>
+								{language == "eng" ? (
+									<Text style={styles.bottomSecondaryTxt}>
+										Return
+									</Text>
+								) : (
+									<Text style={styles.bottomSecondaryTxt}>
+										Nazad
+									</Text>
+								)}
+							</TouchableHighlight>
+						</View>
+					</Animated.View>
+				) : (
+					<Animated.View
+						style={[styles.gamePageConfig, moveCustom, fadeConfig]}
+					>
+						<View style={styles.inputCont}>
 							{language == "eng" ? (
-								<Text style={styles.bottomBtnPrimaryTxt}>
-									Begin
+								<Text style={styles.inputExp}>
+									Add your own prompts:
 								</Text>
 							) : (
-								<Text style={styles.bottomBtnPrimaryTxt}>
-									Kreni
+								<Text style={styles.inputExp}>
+									Dodaj svoja pravila:
 								</Text>
 							)}
-						</TouchableHighlight>
-						<TouchableHighlight
-							underlayColor={colors.white}
-							style={styles.bottomSecondary}
-							onPress={() => toggleCustomModul(false)}
-						>
-							{language == "eng" ? (
-								<Text style={styles.bottomSecondaryTxt}>
-									Return
-								</Text>
-							) : (
-								<Text style={styles.bottomSecondaryTxt}>
-									Nazad
-								</Text>
-							)}
-						</TouchableHighlight>
-					</View>
-				</Animated.View>
+							<View style={styles.inputFieldCont}>
+								<TextInput
+									style={styles.inputField}
+									onChangeText={(customPrompt) =>
+										customInputUpdate(customPrompt)
+									}
+									onSubmitEditing={addPrompt}
+									onBlur={blurCustom}
+									onFocus={focusCustom}
+									value={customPrompt}
+									multiline={false}
+								/>
+								<TouchableHighlight
+									onPress={addPrompt}
+									underlayColor={colors.white}
+									style={styles.inputFieldBtn}
+								>
+									<Text style={styles.inputFieldBtnTxt}>
+										+
+									</Text>
+								</TouchableHighlight>
+							</View>
+						</View>
+						<View style={styles.customListWrapper}>
+							<ScrollView
+								showsVerticalScrollIndicator={true}
+								style={styles.customList}
+								contentContainerStyle={styles.customListCont}
+								centerContent={true}
+							>
+								{customListMap.map((prompt, index) => (
+									<TouchableOpacity
+										activeOpacity={0.6}
+										key={index}
+										onPress={() => deletePrompt(index)}
+									>
+										<View style={styles.customPromptCont}>
+											<View
+												style={
+													styles.customPromptTxtCont
+												}
+											>
+												<Text
+													style={
+														styles.customPromptTxt
+													}
+												>
+													{prompt}
+												</Text>
+											</View>
+											<View
+												style={
+													styles.customPrompIconCont
+												}
+											>
+												<Exit
+													style={
+														styles.customPromptIcon
+													}
+												/>
+											</View>
+										</View>
+									</TouchableOpacity>
+								))}
+							</ScrollView>
+						</View>
+						<View style={styles.bottomBtnCont}>
+							<TouchableHighlight
+								underlayColor={colors.white}
+								style={styles.bottomBtnPrimary}
+								onPress={startGame}
+							>
+								{language == "eng" ? (
+									<Text style={styles.bottomBtnPrimaryTxt}>
+										Begin
+									</Text>
+								) : (
+									<Text style={styles.bottomBtnPrimaryTxt}>
+										Kreni
+									</Text>
+								)}
+							</TouchableHighlight>
+							<TouchableHighlight
+								underlayColor={colors.white}
+								style={styles.bottomSecondary}
+								onPress={() => toggleCustomModul(false)}
+							>
+								{language == "eng" ? (
+									<Text style={styles.bottomSecondaryTxt}>
+										Return
+									</Text>
+								) : (
+									<Text style={styles.bottomSecondaryTxt}>
+										Nazad
+									</Text>
+								)}
+							</TouchableHighlight>
+						</View>
+					</Animated.View>
+				)}
+
 				<Animated.View style={[styles.gamePage, fadeGame]}>
 					<View style={styles.gamePromptCont}>
 						<Text style={styles.gamePromptTxt}>{gamePrompt}</Text>
@@ -1237,12 +1425,32 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 function MainScreen() {
 	const windowHeight = useWindowDimensions().height;
-	const [rewardedOpen, setRewardedOpen] = useState(false);
+	const [consentOpen, setConsentOpen] = useState(true);
 	const [gameOpen, setGameOpen] = useState(false);
+	const [rewardedOpen, setRewardedOpen] = useState(false);
+
+	async function checkConsent() {
+		consentStatus = await AsyncStorage.getItem("consentStatus");
+		if (consentStatus == undefined || consentStatus == null) {
+			consentStatus = true;
+			setConsentOpen(consentStatus);
+		} else {
+			consentStatus = false;
+			setConsentOpen(consentStatus);
+		}
+	}
 
 	useEffect(() => {
+		checkConsent();
 		askForPermission();
 	}, []);
+
+	const openLanding = async (value) => {
+		var consentVal = value.toString();
+		await AsyncStorage.removeItem("consentStatus");
+		await AsyncStorage.setItem("consentStatus", consentVal);
+		setConsentOpen(value);
+	};
 
 	const openGame = (value) => {
 		setGameOpen(value);
@@ -1258,13 +1466,16 @@ function MainScreen() {
 		>
 			<StatusBar hidden />
 
-			{rewardedOpen ? <RewardedBG /> : null}
+			{rewardedOpen || consentOpen ? <RewardedBG /> : null}
 			{rewardedOpen ? (
 				<RewardedScreen rewardedCallback={openRewardedModul} />
 			) : null}
 
-			{!rewardedOpen ? <MainBG /> : null}
-			{!rewardedOpen && !gameOpen ? (
+			{!rewardedOpen && !consentOpen ? <MainBG /> : null}
+			{!rewardedOpen && consentOpen ? (
+				<ConsentScreen consentCallback={openLanding} />
+			) : null}
+			{!rewardedOpen && !gameOpen && !consentOpen ? (
 				<LandingScreen gameCallback={openGame} />
 			) : null}
 			{!rewardedOpen && gameOpen ? (
@@ -1275,7 +1486,7 @@ function MainScreen() {
 			) : null}
 
 			<View style={styles.ads}>
-				{!rewardedOpen ? (
+				{!rewardedOpen && !consentOpen ? (
 					<AdMobBanner
 						bannerSize="smartBannerPortrait"
 						adUnitID={
