@@ -29,8 +29,8 @@ It requires no account, no swapping the phone around the room, just a cup of dri
 ## The Chimera Team
 
 -   [Dario Dumlijan - Developer](https://linktr.ee/DarioDumlijan)
--   [Boris Vida - UI/UX Designer](https://behance.net/lemondesignuk)
--   [Damjan Gazibaric - Assets Designer](https://behance.net/gazdadesigns)
+-   [Damjan Gazibaric - UI/UX Designer](https://behance.net/gazdadesigns)
+-   [Boris Vida - Assets Designer](https://behance.net/lemondesignuk)
 
 [More by Chimera Studio](https://linktr.ee/chimerastudiotm)
 

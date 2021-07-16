@@ -6,7 +6,7 @@
     "description": "Chug is a perfect party starter drinking game meant to be played with others. You will discover funny, interesting and weird things you didn't know about your friends.",
     "owner": "ddario",
     "privacy": "unlisted",
-    "githubUrl": "https://github.com/dariodumlijan/ReactNative_Chug.git",
+    "githubUrl": "https://github.com/dariodumlijan/ReactNative_Chug",
     "orientation": "portrait",
     "backgroundColor": "#ffffff",
     "primaryColor": "#ffffff",
@@ -14,7 +14,7 @@
     "splash": {
       "image": "./app/assets/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ffb900"
     },
     "platforms": [
       "ios",

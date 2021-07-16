@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
 		display: "flex",
 		width: "112%",
 		height: "120%",
-		backgroundColor: colors.primary,
+		backgroundColor: colors.primaryLight,
 		flex: Platform.OS === "ios" && !Platform.isPad ? null : 1,
 	},
 });

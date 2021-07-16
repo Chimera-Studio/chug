@@ -4,7 +4,11 @@ import colors from "../config/colors";
 import Foam from "../assets/img/foam.svg";
 
 function MainBG() {
-	return <View style={styles.backgroundWrapper}></View>;
+	return (
+		<View style={styles.backgroundWrapper}>
+			<Foam style={styles.foam} />
+		</View>
+	);
 }
 
 const styles = StyleSheet.create({
@@ -14,7 +18,6 @@ const styles = StyleSheet.create({
 		left: "-6%",
 		right: 0,
 		bottom: 0,
-		display: "flex",
 		width: "112%",
 		height: "120%",
 		backgroundColor: colors.primary,
@@ -22,10 +25,10 @@ const styles = StyleSheet.create({
 	},
 	foam: {
 		position: "absolute",
-		top: "0",
-		left: "0",
-		width: "100%",
-		aspectRatio: 1 / 10,
+		top: 0,
+		left: 0,
+		width: "200%",
+		height: "15%",
 	},
 });
 
