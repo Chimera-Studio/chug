@@ -127,27 +127,19 @@ var topicList = [
 	},
 ];
 
-var presetList = [
-	{
-		title: "This is a Preset 1 test",
-		selected: false,
-	},
-	{
-		title: "This is a Preset 2 long test name to see the result",
-		selected: false,
-	},
-	{
-		title: "Preset 3",
-		selected: false,
-	},
-];
-
+var presetList = [];
 var rewardList = [];
 
 var selectedStates = topicList.map(({ selected }) => selected);
 var unlockedStates = topicList.map(({ unlocked }) => unlocked);
+var presetListTitle = presetList.map(({ title }) => title);
 var selectedPresetStates = presetList.map(({ selected }) => selected);
 var customListPrompts = custom_list.slice();
+
+var presetOpen = false;
+var customOpen = false;
+var customMoreOpen = false;
+
 var rewardListName;
 var rewardListVal;
 var rewardIndex;
@@ -593,7 +585,24 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 	const [selectedTopics, setSelectedTopics] = useState(selectedStates);
 	const [unlockedTopics, setUnlockedTopics] = useState(unlockedStates);
+
+	const [customTopic, setCustomTopic] = useState(false);
+
+	const [presetListMap, setPresetListMap] = useState(presetListTitle);
 	const [selectedPreset, setSelectedPreset] = useState(selectedPresetStates);
+	const [customPreset, setCustomPreset] = useState(false);
+	const [customPresetTitle, setCustomPresetTitle] = useState("");
+	const [customPrompt, setCustomPrompt] = useState("");
+	const [customListMap, setCustomListMap] = useState(customListPrompts);
+
+	const [alertShow, setAlertShow] = useState(false);
+	const [emptyPrompt, setEmptyPrompt] = useState(false);
+	const [emptyList, setEmptyList] = useState(false);
+	const [emptyGame, setEmptyGame] = useState(false);
+	const [ruleAdded, setRuleAdded] = useState(false);
+	const [customModul, setCustomModul] = useState(false);
+	const [presetModul, setPresetModul] = useState(false);
+	const [presetModulAlert, setPresetModulAlert] = useState(false);
 
 	useEffect(() => {
 		unlockedStates = topicList.map(({ unlocked }) => unlocked);
@@ -613,53 +622,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			easing: Easing.linear,
 		}).start();
 	}
-
-	const [alertShow, setAlertShow] = useState(false);
-	const [emptyPrompt, setEmptyPrompt] = useState(false);
-	const [emptyList, setEmptyList] = useState(false);
-	const [emptyGame, setEmptyGame] = useState(false);
-	const [ruleAdded, setRuleAdded] = useState(false);
-	const [presetModul, setPresetModul] = useState(false);
-
-	const [customTopic, setCustomTopic] = useState(false);
-	const [customPreset, setCustomPreset] = useState(true);
-	const [customPrompt, setCustomPrompt] = useState("");
-	const [customListMap, setCustomListMap] = useState(customListPrompts);
-	var customOpen = false;
-	var customMoreOpen = false;
-	var isPlaying = false;
-
-	const selectTopic = (value, selected, index) => {
-		if (!selected) {
-			topicList[index].selected = true;
-			if (value == "custom") {
-				setCustomTopic(true);
-			}
-		} else {
-			if (value == "custom" && custom_list.length > 0) {
-				setPresetModul(true);
-			} else if (value == "custom" && custom_list.length == 0) {
-				topicList[index].selected = false;
-				setCustomTopic(false);
-			} else {
-				topicList[index].selected = false;
-			}
-		}
-
-		selectedStates = topicList.map(({ selected }) => selected);
-		setSelectedTopics(selectedStates);
-	};
-
-	const selectPreset = (selected, index) => {
-		if (!selected) {
-			presetList[index].selected = true;
-		} else {
-			presetList[index].selected = false;
-		}
-
-		selectedPresetStates = presetList.map(({ selected }) => selected);
-		setSelectedPreset(selectedPresetStates);
-	};
 
 	const [opacityConfig, setOpacityConfig] = useState(new Animated.Value(1));
 	const [opacityGame, setOpacityGame] = useState(new Animated.Value(0));
@@ -723,27 +685,43 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	};
 
 	const [slideTopics, setSlideTopics] = useState(new Animated.Value(0));
-	const [slideCustom, setSlideCustom] = useState(
+	const [slidePreset, setSlidePreset] = useState(
 		new Animated.Value(useWidth)
 	);
+	const [slideCustom, setSlideCustom] = useState(
+		new Animated.Value(useWidth * 2)
+	);
 	function slideEffect() {
-		var fadeConfigVal = 0;
-		var fadeGameVal = 0;
-		if (customOpen) {
-			fadeGameVal = -useWidth;
-			fadeConfigVal = 0;
-		} else {
-			fadeGameVal = 0;
-			fadeConfigVal = useWidth;
+		var slideTopicsVal = 0;
+		var slidePresetVal = 0;
+		var slideCustomVal = 0;
+		if (!presetOpen && !customOpen) {
+			slideTopicsVal = 0;
+			slidePresetVal = useWidth;
+			slideCustomVal = useWidth * 2;
+		} else if (presetOpen && !customOpen) {
+			slideTopicsVal = -useWidth;
+			slidePresetVal = 0;
+			slideCustomVal = useWidth;
+		} else if (presetOpen && customOpen) {
+			slideTopicsVal = -useWidth * 2;
+			slidePresetVal = -useWidth;
+			slideCustomVal = 0;
 		}
 		Animated.timing(slideTopics, {
-			toValue: fadeGameVal,
+			toValue: slideTopicsVal,
+			duration: 300,
+			useNativeDriver: true,
+			easing: Easing.linear,
+		}).start();
+		Animated.timing(slidePreset, {
+			toValue: slidePresetVal,
 			duration: 300,
 			useNativeDriver: true,
 			easing: Easing.linear,
 		}).start();
 		Animated.timing(slideCustom, {
-			toValue: fadeConfigVal,
+			toValue: slideCustomVal,
 			duration: 300,
 			useNativeDriver: true,
 			easing: Easing.linear,
@@ -752,11 +730,62 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const moveTopic = {
 		transform: [{ translateX: slideTopics }],
 	};
+	const movePreset = {
+		transform: [{ translateX: slidePreset }],
+	};
 	const moveCustom = {
 		transform: [{ translateX: slideCustom }],
 	};
 
-	const toggleCustomModul = (boleon) => {
+	const selectTopic = (value, selected, index) => {
+		if (!selected) {
+			topicList[index].selected = true;
+			if (value == "custom") {
+				setCustomTopic(true);
+			}
+		} else {
+			if (value == "custom" && custom_list.length > 0) {
+				setCustomModul(true);
+			} else if (value == "custom" && custom_list.length == 0) {
+				topicList[index].selected = false;
+				setCustomTopic(false);
+			} else {
+				topicList[index].selected = false;
+			}
+		}
+
+		selectedStates = topicList.map(({ selected }) => selected);
+		setSelectedTopics(selectedStates);
+	};
+
+	const selectPreset = (selected, index) => {
+		if (!selected) {
+			presetList[index].selected = true;
+		} else {
+			presetList[index].selected = false;
+		}
+
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedPreset(selectedPresetStates);
+	};
+
+	const togglePresetModul = async (boleon) => {
+		presetOpen = boleon;
+
+		presetList = JSON.parse(await AsyncStorage.getItem("presetList"));
+		if (presetList && presetList.length) {
+			setCustomPreset(true);
+			presetListTitle = presetList.map(({ title }) => title);
+			setPresetListMap(presetListTitle);
+		} else {
+			setCustomPreset(false);
+			presetList = [];
+		}
+
+		slideEffect();
+	};
+
+	const toggleCustomModul = async (boleon) => {
 		customOpen = boleon;
 		slideEffect();
 	};
@@ -819,10 +848,10 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		setSelectedTopics(selectedStates);
 
 		setCustomTopic(false);
-		setPresetModul(false);
+		setCustomModul(false);
 	};
 
-	const startGame = () => {
+	const startGame = async () => {
 		var oneIsChecked = false;
 		for (var i = 0; i < topicList.length; i++) {
 			if (topicList[i].selected == true) {
@@ -832,19 +861,36 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 				oneIsChecked = false;
 			}
 		}
-		if (customTopic == true && custom_list.length == 0) {
+
+		var onePresetIsChecked = false;
+		for (var i = 0; i < presetList.length; i++) {
+			if (presetList[i].selected == true) {
+				onePresetIsChecked = true;
+				break;
+			} else {
+				onePresetIsChecked = false;
+			}
+		}
+
+		if (customTopic && custom_list.length == 0 && !onePresetIsChecked) {
 			setEmptyList(true);
 			alertDelay();
-		} else if (oneIsChecked == false) {
+		} else if (!oneIsChecked) {
 			setEmptyGame(true);
 			alertDelay();
 		} else {
-			startGameEffect();
-
 			for (var i = 0; i < topicList.length; i++) {
 				if (topicList[i].selected && topicList[i].value !== "custom") {
 					var getTopicList = topicList[i].value + "_" + languagePref;
 					game_list = game_list.concat(eval(getTopicList));
+				}
+			}
+			for (var i = 0; i < presetList.length; i++) {
+				if (presetList[i].selected) {
+					var getPresetList = await AsyncStorage.getItem(
+						presetList[i].title
+					);
+					game_list = game_list.concat(eval(getPresetList));
 				}
 			}
 			game_list = game_list.concat(custom_list);
@@ -854,6 +900,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 			custom_list = [];
 			gameCounter = 0;
+
+			startGameEffect();
 		}
 	};
 
@@ -887,6 +935,99 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		setTimeout(function () {
 			setAgainWait(false);
 		}, 5e3);
+	};
+
+	const openPresetModul = () => {
+		if (custom_list.length > 0) {
+			setPresetModul(true);
+		} else {
+			console.log("You need to add rules!");
+		}
+	};
+
+	const exitPresetModul = () => {
+		setPresetModul(false);
+		setPresetModulAlert(false);
+		setCustomPresetTitle("");
+	};
+
+	const save = () => {
+		var titleAvailable = true;
+		for (var i = 0; i < presetList.length; i++) {
+			if (presetList[i].title == customPresetTitle) {
+				titleAvailable = false;
+				break;
+			} else {
+				titleAvailable = true;
+			}
+		}
+		if (
+			customPresetTitle == "" ||
+			customPresetTitle == undefined ||
+			customPresetTitle == null
+		) {
+			setEmptyPrompt(true);
+			alertDelay();
+		} else if (titleAvailable) {
+			savePreset(customPresetTitle);
+		} else {
+			setPresetModulAlert(true);
+		}
+	};
+
+	const update = async () => {
+		var updateIndex = presetList.findIndex(
+			(obj) => obj.title == customPresetTitle
+		);
+		presetList.splice(updateIndex, 1);
+		await AsyncStorage.removeItem(customPresetTitle);
+
+		savePreset(customPresetTitle);
+	};
+
+	const savePreset = async (value) => {
+		await AsyncStorage.removeItem("presetList");
+
+		var obj = {};
+		obj["title"] = value;
+		obj["selected"] = false;
+		presetList.push(obj);
+
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedPreset(selectedPresetStates);
+
+		await AsyncStorage.setItem("presetList", JSON.stringify(presetList));
+		await AsyncStorage.setItem(value, JSON.stringify(custom_list));
+
+		presetListTitle = presetList.map(({ title }) => title);
+		setPresetListMap(presetListTitle);
+
+		setPresetModul(false);
+		setPresetModulAlert(false);
+		setCustomPreset(true);
+		setCustomPresetTitle("");
+
+		setRuleAdded(true);
+		alertDelay();
+	};
+
+	const deletePreset = async (index) => {
+		var presetTitle = presetList[index].title;
+		presetList.splice(index, 1);
+
+		await AsyncStorage.removeItem("presetList");
+		await AsyncStorage.removeItem(presetTitle);
+		await AsyncStorage.setItem("presetList", JSON.stringify(presetList));
+
+		if (presetList && presetList.length) {
+			setCustomPreset(true);
+		} else {
+			setCustomPreset(false);
+			presetList = [];
+		}
+
+		presetListTitle = presetList.map(({ title }) => title);
+		setPresetListMap(presetListTitle);
 	};
 
 	return (
@@ -973,7 +1114,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							onPress={
 								!customTopic
 									? startGame
-									: () => toggleCustomModul(true)
+									: () => togglePresetModul(true)
 							}
 						>
 							{!customTopic ? (
@@ -1030,17 +1171,31 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						</TouchableOpacity>
 					</View>
 				</Animated.View>
-				{customPreset ? (
-					<Animated.View
-						style={[styles.gamePageConfig, moveCustom, fadeConfig]}
+				<Animated.View
+					style={[styles.gamePageConfig, movePreset, fadeConfig]}
+				>
+					{!customPreset ? (
+						<View>
+							{language == "eng" ? (
+								<Text style={styles.noPresetTitle}>
+									You have no presets saved!
+								</Text>
+							) : (
+								<Text style={styles.noPresetTitle}>
+									Nemaš spremljena pravila!
+								</Text>
+							)}
+						</View>
+					) : null}
+
+					<ScrollView
+						showsVerticalScrollIndicator={true}
+						style={styles.presetScroll}
+						contentContainerStyle={styles.presetScrollCont}
+						centerContent={true}
 					>
-						<ScrollView
-							showsVerticalScrollIndicator={true}
-							style={styles.presetScroll}
-							contentContainerStyle={styles.presetScrollCont}
-							centerContent={true}
-						>
-							{presetList.map((preset, index) => (
+						{presetList.map((preset, index) => (
+							<View key={index} style={styles.presetItemCont}>
 								<TouchableHighlight
 									underlayColor={colors.white}
 									style={
@@ -1048,7 +1203,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 											? styles.presetItem
 											: styles.presetItemSelected
 									}
-									key={index}
 									onPress={() =>
 										selectPreset(preset.selected, index)
 									}
@@ -1060,159 +1214,163 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 												: styles.presetItemTxtSelected
 										}
 									>
-										{preset.title}
+										{presetListMap[index]}
 									</Text>
 								</TouchableHighlight>
-							))}
-						</ScrollView>
-						<View style={styles.bottomBtnCont}>
-							<TouchableHighlight
-								underlayColor={colors.white}
-								style={styles.bottomBtnPrimary}
-								onPress={startGame}
-							>
-								{language == "eng" ? (
-									<Text style={styles.bottomBtnPrimaryTxt}>
-										Begin
-									</Text>
-								) : (
-									<Text style={styles.bottomBtnPrimaryTxt}>
-										Kreni
-									</Text>
-								)}
-							</TouchableHighlight>
-							<TouchableHighlight
-								underlayColor={colors.white}
-								style={styles.bottomSecondary}
-								onPress={() => setCustomPreset(false)}
-							>
-								{language == "eng" ? (
-									<Text style={styles.bottomSecondaryTxt}>
-										Return
-									</Text>
-								) : (
-									<Text style={styles.bottomSecondaryTxt}>
-										Nazad
-									</Text>
-								)}
-							</TouchableHighlight>
-						</View>
-					</Animated.View>
-				) : (
-					<Animated.View
-						style={[styles.gamePageConfig, moveCustom, fadeConfig]}
-					>
-						<View style={styles.inputCont}>
+								<TouchableOpacity
+									activeOpacity={0.6}
+									style={styles.presetDeleteBtn}
+									onPress={() => deletePreset(index)}
+								>
+									<Exit style={styles.presetDeleteIcon} />
+								</TouchableOpacity>
+							</View>
+						))}
+					</ScrollView>
+					<View style={styles.bottomBtnCont}>
+						<TouchableHighlight
+							underlayColor={colors.white}
+							style={styles.bottomBtnPrimary}
+							onPress={() => toggleCustomModul(true)}
+						>
 							{language == "eng" ? (
-								<Text style={styles.inputExp}>
-									Add your own prompts:
+								<Text style={styles.bottomBtnPrimaryTxt}>
+									Next Step
 								</Text>
 							) : (
-								<Text style={styles.inputExp}>
-									Dodaj svoja pravila:
+								<Text style={styles.bottomBtnPrimaryTxt}>
+									Dalje
 								</Text>
 							)}
-							<View style={styles.inputFieldCont}>
-								<TextInput
-									style={styles.inputField}
-									onChangeText={(customPrompt) =>
-										customInputUpdate(customPrompt)
-									}
-									onSubmitEditing={addPrompt}
-									onBlur={blurCustom}
-									onFocus={focusCustom}
-									value={customPrompt}
-									multiline={false}
-								/>
-								<TouchableHighlight
-									onPress={addPrompt}
-									underlayColor={colors.white}
-									style={styles.inputFieldBtn}
+						</TouchableHighlight>
+						<TouchableHighlight
+							underlayColor={colors.white}
+							style={styles.bottomSecondary}
+							onPress={() => togglePresetModul(false)}
+						>
+							{language == "eng" ? (
+								<Text style={styles.bottomSecondaryTxt}>
+									Return
+								</Text>
+							) : (
+								<Text style={styles.bottomSecondaryTxt}>
+									Nazad
+								</Text>
+							)}
+						</TouchableHighlight>
+					</View>
+				</Animated.View>
+				<Animated.View
+					style={[styles.gamePageConfig, moveCustom, fadeConfig]}
+				>
+					<View style={styles.inputCont}>
+						{language == "eng" ? (
+							<Text style={styles.inputExp}>
+								Add your own prompts:
+							</Text>
+						) : (
+							<Text style={styles.inputExp}>
+								Dodaj svoja pravila:
+							</Text>
+						)}
+						<View style={styles.inputFieldCont}>
+							<TextInput
+								style={styles.inputField}
+								onChangeText={(customPrompt) =>
+									customInputUpdate(customPrompt)
+								}
+								onSubmitEditing={addPrompt}
+								onBlur={blurCustom}
+								onFocus={focusCustom}
+								value={customPrompt}
+								multiline={false}
+							/>
+							<TouchableHighlight
+								onPress={addPrompt}
+								underlayColor={colors.white}
+								style={styles.inputFieldBtn}
+							>
+								<Text style={styles.inputFieldBtnTxt}>+</Text>
+							</TouchableHighlight>
+						</View>
+						<TouchableHighlight
+							onPress={openPresetModul}
+							underlayColor={colors.white}
+							style={styles.savePresetBtn}
+						>
+							<Text style={styles.savePresetBtnTxt}>
+								Save Preset
+							</Text>
+						</TouchableHighlight>
+					</View>
+					<View style={styles.customListWrapper}>
+						<ScrollView
+							showsVerticalScrollIndicator={true}
+							style={styles.customList}
+							contentContainerStyle={styles.customListCont}
+							centerContent={true}
+						>
+							{customListMap.map((prompt, index) => (
+								<TouchableOpacity
+									activeOpacity={0.6}
+									key={index}
+									onPress={() => deletePrompt(index)}
 								>
-									<Text style={styles.inputFieldBtnTxt}>
-										+
-									</Text>
-								</TouchableHighlight>
-							</View>
-						</View>
-						<View style={styles.customListWrapper}>
-							<ScrollView
-								showsVerticalScrollIndicator={true}
-								style={styles.customList}
-								contentContainerStyle={styles.customListCont}
-								centerContent={true}
-							>
-								{customListMap.map((prompt, index) => (
-									<TouchableOpacity
-										activeOpacity={0.6}
-										key={index}
-										onPress={() => deletePrompt(index)}
-									>
-										<View style={styles.customPromptCont}>
-											<View
-												style={
-													styles.customPromptTxtCont
-												}
+									<View style={styles.customPromptCont}>
+										<View
+											style={styles.customPromptTxtCont}
+										>
+											<Text
+												style={styles.customPromptTxt}
 											>
-												<Text
-													style={
-														styles.customPromptTxt
-													}
-												>
-													{prompt}
-												</Text>
-											</View>
-											<View
-												style={
-													styles.customPrompIconCont
-												}
-											>
-												<Exit
-													style={
-														styles.customPromptIcon
-													}
-												/>
-											</View>
+												{prompt}
+											</Text>
 										</View>
-									</TouchableOpacity>
-								))}
-							</ScrollView>
-						</View>
-						<View style={styles.bottomBtnCont}>
-							<TouchableHighlight
-								underlayColor={colors.white}
-								style={styles.bottomBtnPrimary}
-								onPress={startGame}
-							>
-								{language == "eng" ? (
-									<Text style={styles.bottomBtnPrimaryTxt}>
-										Begin
-									</Text>
-								) : (
-									<Text style={styles.bottomBtnPrimaryTxt}>
-										Kreni
-									</Text>
-								)}
-							</TouchableHighlight>
-							<TouchableHighlight
-								underlayColor={colors.white}
-								style={styles.bottomSecondary}
-								onPress={() => toggleCustomModul(false)}
-							>
-								{language == "eng" ? (
-									<Text style={styles.bottomSecondaryTxt}>
-										Return
-									</Text>
-								) : (
-									<Text style={styles.bottomSecondaryTxt}>
-										Nazad
-									</Text>
-								)}
-							</TouchableHighlight>
-						</View>
-					</Animated.View>
-				)}
-
+										<View
+											style={styles.customPrompIconCont}
+										>
+											<Exit
+												style={styles.customPromptIcon}
+											/>
+										</View>
+									</View>
+								</TouchableOpacity>
+							))}
+						</ScrollView>
+					</View>
+					<View style={styles.bottomBtnCont}>
+						<TouchableHighlight
+							underlayColor={colors.white}
+							style={styles.bottomBtnPrimary}
+							onPress={startGame}
+						>
+							{language == "eng" ? (
+								<Text style={styles.bottomBtnPrimaryTxt}>
+									Begin
+								</Text>
+							) : (
+								<Text style={styles.bottomBtnPrimaryTxt}>
+									Kreni
+								</Text>
+							)}
+						</TouchableHighlight>
+						<TouchableHighlight
+							underlayColor={colors.white}
+							style={styles.bottomSecondary}
+							onPress={() => toggleCustomModul(false)}
+						>
+							{language == "eng" ? (
+								<Text style={styles.bottomSecondaryTxt}>
+									Return
+								</Text>
+							) : (
+								<Text style={styles.bottomSecondaryTxt}>
+									Nazad
+								</Text>
+							)}
+						</TouchableHighlight>
+					</View>
+				</Animated.View>
 				<Animated.View style={[styles.gamePage, fadeGame]}>
 					<View style={styles.gamePromptCont}>
 						<Text style={styles.gamePromptTxt}>{gamePrompt}</Text>
@@ -1397,6 +1555,62 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			)}
 
 			{!presetModul ? null : (
+				<View style={styles.presetModulWrapper}>
+					<Text style={styles.presetModulExp}>
+						Add a preset name:
+					</Text>
+					<View style={styles.presetInputFieldCont}>
+						<TextInput
+							style={styles.presetInputField}
+							onChangeText={(customPresetTitle) =>
+								setCustomPresetTitle(customPresetTitle)
+							}
+							value={customPresetTitle}
+							multiline={false}
+						/>
+						<TouchableHighlight
+							onPress={save}
+							underlayColor={colors.white}
+							style={styles.presetInputFieldBtn}
+						>
+							<Text style={styles.presetInputFieldBtnTxt}>
+								Save
+							</Text>
+						</TouchableHighlight>
+					</View>
+					{!presetModulAlert ? null : (
+						<View style={styles.presetModulContainer}>
+							<Text style={styles.presetModulDisc}>
+								Preset with this name already exists.{"\n"}
+								Change the name or update that preset?
+							</Text>
+							<TouchableOpacity
+								activeOpacity={0.8}
+								style={styles.presetModulBtn}
+								onPress={update}
+							>
+								<Text style={styles.presetModulText}>
+									Update
+								</Text>
+							</TouchableOpacity>
+						</View>
+					)}
+					<TouchableOpacity
+						activeOpacity={0.6}
+						style={styles.exitPresetSave}
+						onPress={exitPresetModul}
+					>
+						<Svg height="100%" width="100%" viewBox="0 0 352 352">
+							<Path
+								fill={colors.primary}
+								d="M242.7,176L342.8,75.9c12.3-12.3,12.3-32.2,0-44.5L320.6,9.2c-12.3-12.3-32.2-12.3-44.5,0L176,109.3L75.9,9.2 C63.7-3.1,43.7-3.1,31.5,9.2L9.2,31.4c-12.3,12.3-12.3,32.2,0,44.5L109.3,176L9.2,276.1c-12.3,12.3-12.3,32.2,0,44.5l22.2,22.2 c12.3,12.3,32.2,12.3,44.5,0L176,242.7l100.1,100.1c12.3,12.3,32.2,12.3,44.5,0l22.2-22.2c12.3-12.3,12.3-32.2,0-44.5L242.7,176z"
+							/>
+						</Svg>
+					</TouchableOpacity>
+				</View>
+			)}
+
+			{!customModul ? null : (
 				<View style={styles.modulWrapper}>
 					<Text style={styles.modulExp}>
 						This will delete the custom rules you added!
@@ -1405,7 +1619,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						<TouchableOpacity
 							activeOpacity={0.8}
 							style={styles.modulBtn}
-							onPress={() => setPresetModul(false)}
+							onPress={() => setCustomModul(false)}
 						>
 							<Text style={styles.modulText}>Keep</Text>
 						</TouchableOpacity>
