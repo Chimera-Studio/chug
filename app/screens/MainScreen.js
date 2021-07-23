@@ -38,6 +38,7 @@ import styles from "../config/styles";
 import Home from "../assets/img/home.svg";
 import ListArrow from "../assets/img/arrow.svg";
 
+import Timer from "../screens/Timer";
 import MainBG from "../screens/MainBG";
 import RewardedBG from "../screens/RewardedBG";
 
@@ -140,6 +141,13 @@ var presetOpen = false;
 var customOpen = false;
 var customMoreOpen = false;
 
+var timerStart = false;
+var timerUpdate = {
+	hours: 24,
+	minutes: 0,
+	seconds: 0,
+};
+
 var rewardListName;
 var rewardListVal;
 var rewardIndex;
@@ -166,6 +174,72 @@ function checkTopicList() {
 		} else {
 			rewardDisabled = true;
 		}
+	}
+}
+
+async function checkRewardCountdown() {
+	var currentTime = new Date();
+	var countdownDate = JSON.parse(await AsyncStorage.getItem("countdownTime"));
+
+	var currentDate = {
+		year: currentTime.getFullYear(),
+		month: currentTime.getMonth() + 1,
+		day: currentTime.getDate(),
+		hours: currentTime.getHours(),
+		minutes: currentTime.getMinutes(),
+		seconds: currentTime.getSeconds(),
+	};
+
+	if (countdownDate) {
+		var countdownH =
+			countdownDate.year +
+			"" +
+			countdownDate.month +
+			"" +
+			countdownDate.day +
+			"" +
+			("0" + countdownDate.hours).slice(-2);
+		var currentH =
+			currentDate.year +
+			"" +
+			currentDate.month +
+			"" +
+			currentDate.day +
+			"" +
+			("0" + currentDate.hours).slice(-2);
+
+		var diffCountH = Number(countdownH) - Number(currentH);
+		var stringMin =
+			Number(countdownH + "" + ("0" + countdownDate.minutes).slice(-2)) -
+			Number(currentH + "" + ("0" + currentDate.minutes).slice(-2));
+		var stringSec =
+			Number(
+				countdownH +
+					"" +
+					("0" + countdownDate.minutes).slice(-2) +
+					"" +
+					("0" + countdownDate.seconds).slice(-2)
+			) -
+			Number(
+				currentH +
+					"" +
+					("0" + currentDate.minutes).slice(-2) +
+					"" +
+					("0" + currentDate.seconds).slice(-2)
+			);
+
+		var diffCountMin = stringMin.toString().slice(2);
+		var diffCountSec = stringSec.toString().slice(4);
+
+		timerUpdate.hours = diffCountH;
+		timerUpdate.minutes = Number(diffCountMin);
+		timerUpdate.seconds = Number(diffCountSec);
+
+		/*
+		console.log(diffCountH);
+		console.log(diffCountMin);
+		console.log(diffCountSec);
+		*/
 	}
 }
 
@@ -240,15 +314,33 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	}
 
 	useEffect(() => {
+		// lockRewards();
+		checkRewardCountdown();
+		checkTimerStart();
 		setSelectedRewardName(rewardListName);
 		rewardIndex = topicList.findIndex((obj) => obj.value == rewardListVal);
+		setCountdown(timerUpdate);
 	}, []);
+	checkRewardCountdown();
 
 	const [language, setLanguage] = useState(languagePref);
 	const [loadRewarded, setLoadRewarded] = useState(false);
 	const [openSelect, setOpenSelect] = useState(false);
 	const [selectedRewardName, setSelectedRewardName] =
 		useState(rewardListName);
+	const [countdown, setCountdown] = useState(timerUpdate);
+	const [countdownStart, setCountdownStart] = useState(timerStart);
+
+	async function checkTimerStart() {
+		var timerStart = await AsyncStorage.getItem("timerStart");
+		if (timerStart && timerStart == "true") {
+			timerStart = true;
+			setCountdownStart(true);
+		} else {
+			timerStart = false;
+			setCountdownStart(false);
+		}
+	}
 
 	async function requestReward() {
 		setLoadRewarded(true);
@@ -297,13 +389,45 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		setOpenSelect(false);
 	};
 
-	function unlockTopic() {
+	async function unlockTopic() {
+		await AsyncStorage.removeItem("countdownTime");
+		await AsyncStorage.removeItem("unlockedRewards");
+
+		var currentTime = new Date();
+
+		var countdownDate = {
+			year: currentTime.getFullYear(),
+			month: currentTime.getMonth() + 1,
+			day: currentTime.getDate(),
+			hours: currentTime.getHours() + 24,
+			minutes: currentTime.getMinutes(),
+			seconds: currentTime.getSeconds(),
+		};
+		timerStart = true;
+
 		topicList[rewardIndex].unlocked = true;
 		unlockedStates = topicList.map(({ unlocked }) => unlocked);
+
+		await AsyncStorage.setItem("timerStart", "true");
+		await AsyncStorage.setItem(
+			"countdownTime",
+			JSON.stringify(countdownDate)
+		);
+		await AsyncStorage.setItem(
+			"unlockedRewards",
+			JSON.stringify(unlockedStates)
+		);
 		rewardEarned = true;
 
 		checkTopicList();
 		rewardedCallback(false);
+	}
+
+	async function lockRewards() {
+		await AsyncStorage.removeItem("timerStart");
+		await AsyncStorage.removeItem("countdownTime");
+		await AsyncStorage.removeItem("unlockedRewards");
+		unlockedStates = topicList.map(({ unlocked }) => unlocked == false);
 	}
 
 	return (
@@ -323,6 +447,24 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 					/>
 				</Svg>
 			</TouchableOpacity>
+
+			<View style={styles.countdownCon}>
+				{countdownStart ? (
+					<Timer
+						hoursMinSecs={countdown}
+						timerCallback={lockRewards}
+					/>
+				) : (
+					<Text style={styles.countdownTimer}>00:00:00</Text>
+				)}
+				{language == "eng" ? (
+					<Text style={styles.countdownTxt}>
+						till the unlocked topics are locked
+					</Text>
+				) : (
+					<Text>do zaključavanja otključanih kategorija</Text>
+				)}
+			</View>
 
 			<View style={styles.selectReward}>
 				{language == "eng" ? (
@@ -600,14 +742,34 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [emptyList, setEmptyList] = useState(false);
 	const [emptyGame, setEmptyGame] = useState(false);
 	const [ruleAdded, setRuleAdded] = useState(false);
+	const [emptyCustom, setEmptyCustom] = useState(false);
+	const [presetSaved, setPresetSaved] = useState(false);
 	const [customModul, setCustomModul] = useState(false);
 	const [presetModul, setPresetModul] = useState(false);
 	const [presetModulAlert, setPresetModulAlert] = useState(false);
 
 	useEffect(() => {
-		unlockedStates = topicList.map(({ unlocked }) => unlocked);
-		setUnlockedTopics(unlockedStates);
+		checkUnlocked();
+		selectedStates = topicList.map(({ selected }) => selected);
+		setSelectedTopics(selectedStates);
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedPreset(selectedPresetStates);
 	}, []);
+
+	async function checkUnlocked() {
+		unlockedStates = JSON.parse(
+			await AsyncStorage.getItem("unlockedRewards")
+		);
+		if (unlockedStates && unlockedStates.length) {
+			for (var i = 0; i < topicList.length; i++) {
+				topicList[i].unlocked = unlockedStates[i];
+			}
+			setUnlockedTopics(unlockedStates);
+		} else {
+			unlockedStates = topicList.map(({ unlocked }) => unlocked);
+			setUnlockedTopics(unlockedStates);
+		}
+	}
 
 	const [gamePrompt, setGamePrompt] = useState("");
 	const [againWait, setAgainWait] = useState(false);
@@ -835,6 +997,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			setEmptyPrompt(false);
 			setEmptyList(false);
 			setEmptyGame(false);
+			setEmptyCustom(false);
+			setPresetSaved(false);
 		}, 3000);
 	};
 
@@ -852,6 +1016,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	};
 
 	const startGame = async () => {
+		game_list = [];
+
 		var oneIsChecked = false;
 		for (var i = 0; i < topicList.length; i++) {
 			if (topicList[i].selected == true) {
@@ -941,7 +1107,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		if (custom_list.length > 0) {
 			setPresetModul(true);
 		} else {
-			console.log("You need to add rules!");
+			setEmptyCustom(true);
+			alertDelay();
 		}
 	};
 
@@ -1007,7 +1174,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		setCustomPreset(true);
 		setCustomPresetTitle("");
 
-		setRuleAdded(true);
+		setPresetSaved(true);
 		alertDelay();
 	};
 
@@ -1030,12 +1197,54 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		setPresetListMap(presetListTitle);
 	};
 
+	const exitScreen = () => {
+		presetOpen = false;
+		customOpen = false;
+		customMoreOpen = false;
+
+		for (var i = 0; i < topicList.length; i++) {
+			topicList[i].selected = false;
+		}
+		topicList[1].selected = true;
+		for (var i = 0; i < presetList.length; i++) {
+			presetList[i].selected = false;
+		}
+
+		selectedStates = topicList.map(({ selected }) => selected);
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedTopics(selectedStates);
+		setSelectedPreset(selectedPresetStates);
+
+		gameCallback(false);
+	};
+
+	const openRewardedScreen = () => {
+		presetOpen = false;
+		customOpen = false;
+		customMoreOpen = false;
+
+		for (var i = 0; i < topicList.length; i++) {
+			topicList[i].selected = false;
+		}
+		topicList[1].selected = true;
+		for (var i = 0; i < presetList.length; i++) {
+			presetList[i].selected = false;
+		}
+
+		selectedStates = topicList.map(({ selected }) => selected);
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedTopics(selectedStates);
+		setSelectedPreset(selectedPresetStates);
+
+		rewardedCallback(true);
+	};
+
 	return (
 		<View style={styles.screenWrapper}>
 			<TouchableOpacity
 				style={styles.home}
 				activeOpacity={0.6}
-				onPress={() => gameCallback(false)}
+				onPress={exitScreen}
 			>
 				<Home />
 			</TouchableOpacity>
@@ -1145,7 +1354,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 									: styles.bottomRewardDisabled
 							}
 							disabled={rewardDisabled}
-							onPress={() => rewardedCallback(true)}
+							onPress={openRewardedScreen}
 						>
 							{language == "eng" ? (
 								<Text
@@ -1408,7 +1617,11 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						</TouchableOpacity>
 						<TouchableHighlight
 							underlayColor={colors.white}
-							style={styles.bottomSecondary}
+							style={[
+								styles.bottomSecondary,
+								!customTopic ? { opacity: 0 } : null,
+							]}
+							disabled={!customTopic}
 							onPress={() => toggleMoreModul(true)}
 						>
 							{language == "eng" ? (
@@ -1539,6 +1752,24 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						<Text style={styles.alertText}>
 							Moraš dodati pravila igri!
 						</Text>
+					) : null}
+
+					{language == "eng" && emptyCustom ? (
+						<Text style={styles.alertText}>
+							You need to add rules to be able to save them!
+						</Text>
+					) : null}
+					{language == "hrv" && emptyList ? (
+						<Text style={styles.alertText}>
+							Moraš dodati pravila da ih možeš spremiti!
+						</Text>
+					) : null}
+
+					{language == "eng" && presetSaved ? (
+						<Text style={styles.alertText}>Preset saved!</Text>
+					) : null}
+					{language == "hrv" && emptyList ? (
+						<Text style={styles.alertText}>Spremljeno!</Text>
 					) : null}
 
 					{language == "eng" && emptyGame ? (
