@@ -744,6 +744,11 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: colors.grayDark,
 	},
+	rewardedCon: {
+		display: "flex",
+		justifyContent: "center",
+		alignItems: "center",
+	},
 	rewardedExp: {
 		display: "flex",
 		justifyContent: "center",

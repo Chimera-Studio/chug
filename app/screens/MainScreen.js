@@ -38,7 +38,6 @@ import styles from "../config/styles";
 import Home from "../assets/img/home.svg";
 import ListArrow from "../assets/img/arrow.svg";
 
-import Timer from "../screens/Timer";
 import MainBG from "../screens/MainBG";
 import RewardedBG from "../screens/RewardedBG";
 
@@ -143,15 +142,17 @@ var customMoreOpen = false;
 
 var timerStart = false;
 var timerUpdate = {
-	hours: 24,
+	hours: 0,
 	minutes: 0,
 	seconds: 0,
 };
+var tickVariable;
 
 var rewardListName;
 var rewardListVal;
 var rewardIndex;
 var rewardDisabled = false;
+var refreshEnabled = true;
 var gameCounter = 0;
 var consentStatus = true;
 var languagePref = "eng";
@@ -175,71 +176,10 @@ function checkTopicList() {
 			rewardDisabled = true;
 		}
 	}
-}
-
-async function checkRewardCountdown() {
-	var currentTime = new Date();
-	var countdownDate = JSON.parse(await AsyncStorage.getItem("countdownTime"));
-
-	var currentDate = {
-		year: currentTime.getFullYear(),
-		month: currentTime.getMonth() + 1,
-		day: currentTime.getDate(),
-		hours: currentTime.getHours(),
-		minutes: currentTime.getMinutes(),
-		seconds: currentTime.getSeconds(),
-	};
-
-	if (countdownDate) {
-		var countdownH =
-			countdownDate.year +
-			"" +
-			countdownDate.month +
-			"" +
-			countdownDate.day +
-			"" +
-			("0" + countdownDate.hours).slice(-2);
-		var currentH =
-			currentDate.year +
-			"" +
-			currentDate.month +
-			"" +
-			currentDate.day +
-			"" +
-			("0" + currentDate.hours).slice(-2);
-
-		var diffCountH = Number(countdownH) - Number(currentH);
-		var stringMin =
-			Number(countdownH + "" + ("0" + countdownDate.minutes).slice(-2)) -
-			Number(currentH + "" + ("0" + currentDate.minutes).slice(-2));
-		var stringSec =
-			Number(
-				countdownH +
-					"" +
-					("0" + countdownDate.minutes).slice(-2) +
-					"" +
-					("0" + countdownDate.seconds).slice(-2)
-			) -
-			Number(
-				currentH +
-					"" +
-					("0" + currentDate.minutes).slice(-2) +
-					"" +
-					("0" + currentDate.seconds).slice(-2)
-			);
-
-		var diffCountMin = stringMin.toString().slice(2);
-		var diffCountSec = stringSec.toString().slice(4);
-
-		timerUpdate.hours = diffCountH;
-		timerUpdate.minutes = Number(diffCountMin);
-		timerUpdate.seconds = Number(diffCountSec);
-
-		/*
-		console.log(diffCountH);
-		console.log(diffCountMin);
-		console.log(diffCountSec);
-		*/
+	if (rewardDisabled && !refreshEnabled) {
+		refreshEnabled = true;
+	} else {
+		refreshEnabled = false;
 	}
 }
 
@@ -315,34 +255,193 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 
 	useEffect(() => {
 		// lockRewards();
-		checkRewardCountdown();
+		setHrs(("0" + timerUpdate.hours).slice(-2));
+		setMins(("0" + timerUpdate.minutes).slice(-2));
+		setSecs(("0" + timerUpdate.seconds).slice(-2));
 		checkTimerStart();
+		checkRefresh();
 		setSelectedRewardName(rewardListName);
 		rewardIndex = topicList.findIndex((obj) => obj.value == rewardListVal);
-		setCountdown(timerUpdate);
 	}, []);
-	checkRewardCountdown();
+
+	function checkRefresh() {
+		checkTopicList();
+		setRefresh(refreshEnabled);
+	}
 
 	const [language, setLanguage] = useState(languagePref);
 	const [loadRewarded, setLoadRewarded] = useState(false);
 	const [openSelect, setOpenSelect] = useState(false);
 	const [selectedRewardName, setSelectedRewardName] =
 		useState(rewardListName);
-	const [countdown, setCountdown] = useState(timerUpdate);
 	const [countdownStart, setCountdownStart] = useState(timerStart);
+	const [refresh, setRefresh] = useState(refreshEnabled);
+
+	const [hrs, setHrs] = useState([timerUpdate.hours]);
+	const [mins, setMins] = useState([timerUpdate.minutes]);
+	const [secs, setSecs] = useState([timerUpdate.seconds]);
 
 	async function checkTimerStart() {
-		var timerStart = await AsyncStorage.getItem("timerStart");
-		if (timerStart && timerStart == "true") {
+		timerStart = await AsyncStorage.getItem("timerStart");
+
+		if (timerStart !== null) {
 			timerStart = true;
-			setCountdownStart(true);
+			setCountdownStart(timerStart);
+			checkRewardCountdown();
 		} else {
 			timerStart = false;
-			setCountdownStart(false);
+			setCountdownStart(timerStart);
 		}
 	}
 
+	async function checkRewardCountdown() {
+		var countdownDate = JSON.parse(
+			await AsyncStorage.getItem("countdownTime")
+		);
+
+		var currentTime = new Date();
+		var currentDate = {
+			year: currentTime.getFullYear(),
+			month: currentTime.getMonth() + 1,
+			day: currentTime.getDate(),
+			hours: currentTime.getHours(),
+			minutes: currentTime.getMinutes(),
+			seconds: currentTime.getSeconds(),
+		};
+
+		var countdownH =
+			countdownDate.year +
+			"" +
+			countdownDate.month +
+			"" +
+			countdownDate.day +
+			"" +
+			countdownDate.hours;
+		var currentH =
+			currentDate.year +
+			"" +
+			currentDate.month +
+			"" +
+			currentDate.day +
+			"" +
+			currentDate.hours;
+
+		var stringH =
+			Number(countdownH + "." + countdownDate.minutes) -
+			Number(currentH + "." + currentDate.minutes);
+		var stringMin =
+			Number(
+				countdownH +
+					"" +
+					countdownDate.minutes +
+					"." +
+					countdownDate.seconds
+			) -
+			Number(
+				countdownH +
+					"" +
+					currentDate.minutes +
+					"." +
+					currentDate.seconds
+			);
+		var stringSec =
+			Number(countdownDate.seconds) - Number(currentDate.seconds);
+
+		var diffCountH = Math.trunc(stringH);
+		var diffCountMin = Math.trunc(stringMin);
+		var diffCountSec = Math.trunc(stringSec);
+		if (diffCountMin < 0) {
+			diffCountMin = 60 - Math.abs(stringMin);
+		}
+		if (diffCountSec < 0) {
+			diffCountSec = 60 - Math.abs(stringSec);
+		}
+
+		timerUpdate.hours = Math.trunc(diffCountH);
+		timerUpdate.minutes = Math.trunc(diffCountMin);
+		timerUpdate.seconds = Math.trunc(diffCountSec);
+
+		tickVariable = setInterval(() => tick(), 1000);
+
+		var checkH = timerUpdate.hours - 1;
+		var checkM = timerUpdate.minutes - 1;
+		var checkS = timerUpdate.seconds - 1;
+		if (checkH <= 0 && checkM <= 0 && checkS <= 0) {
+			lockRewards();
+		}
+	}
+
+	function tick() {
+		if (
+			timerUpdate.hours === 0 &&
+			timerUpdate.minutes === 0 &&
+			timerUpdate.seconds === 0
+		) {
+			lockRewards();
+		} else if (timerUpdate.minutes === 0 && timerUpdate.seconds === 0) {
+			var calcTime = timerUpdate.hours - 1;
+			timerUpdate.hours = calcTime;
+			timerUpdate.minutes = 59;
+			timerUpdate.seconds = 59;
+		} else if (timerUpdate.seconds === 0) {
+			var calcTime = timerUpdate.minutes - 1;
+			timerUpdate.minutes = calcTime;
+			timerUpdate.seconds = 59;
+		} else {
+			var calcTime = timerUpdate.seconds - 1;
+			timerUpdate.seconds = calcTime;
+		}
+
+		setHrs(("0" + timerUpdate.hours).slice(-2));
+		setMins(("0" + timerUpdate.minutes).slice(-2));
+		setSecs(("0" + timerUpdate.seconds).slice(-2));
+	}
+
+	async function lockRewards() {
+		clearInterval(tickVariable);
+		timerUpdate.hours = 0;
+		timerUpdate.minutes = 0;
+		timerUpdate.seconds = 0;
+
+		await AsyncStorage.removeItem("timerStart");
+		await AsyncStorage.removeItem("countdownTime");
+		await AsyncStorage.removeItem("unlockedRewards");
+		timerStart = false;
+		setCountdownStart(timerStart);
+
+		for (var i = 0; i < topicList.length; i++) {
+			if (i <= 3) {
+				topicList[i].unlocked = true;
+			} else {
+				topicList[i].unlocked = false;
+			}
+		}
+		unlockedStates = topicList.map(({ unlocked }) => unlocked);
+
+		rewardList = [];
+		for (var i = 0; i < topicList.length; i++) {
+			if (topicList[i].unlocked == false) {
+				rewardList.push(topicList[i]);
+			}
+		}
+
+		if (rewardList.length == undefined || rewardList.length == 0) {
+			rewardListName = "N/A";
+			disableList = true;
+		} else {
+			if (languagePref == "eng") {
+				rewardListName = rewardList[0].nameEng;
+			} else {
+				rewardListName = rewardList[0].nameHrv;
+			}
+			rewardListVal = rewardList[0].value;
+		}
+		setSelectedRewardName(rewardListName);
+		rewardIndex = topicList.findIndex((obj) => obj.value == rewardListVal);
+	}
+
 	async function requestReward() {
+		clearInterval(tickVariable);
 		setLoadRewarded(true);
 
 		await AdMobRewarded.setAdUnitID(
@@ -367,7 +466,11 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	});
 
 	AdMobRewarded.addEventListener("rewardedVideoUserDidEarnReward", () => {
-		unlockTopic();
+		if (!refreshEnabled) {
+			unlockTopic();
+		} else {
+			refreshCount();
+		}
 	});
 
 	function resetRewarded() {
@@ -390,44 +493,69 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	};
 
 	async function unlockTopic() {
+		await AsyncStorage.removeItem("timerStart");
 		await AsyncStorage.removeItem("countdownTime");
 		await AsyncStorage.removeItem("unlockedRewards");
 
 		var currentTime = new Date();
-
 		var countdownDate = {
 			year: currentTime.getFullYear(),
 			month: currentTime.getMonth() + 1,
 			day: currentTime.getDate(),
-			hours: currentTime.getHours() + 24,
-			minutes: currentTime.getMinutes(),
+			hours: currentTime.getHours() /* Add 24h */,
+			minutes: currentTime.getMinutes() + 10 /* Remove 10min */,
 			seconds: currentTime.getSeconds(),
 		};
-		timerStart = true;
-
-		topicList[rewardIndex].unlocked = true;
-		unlockedStates = topicList.map(({ unlocked }) => unlocked);
-
-		await AsyncStorage.setItem("timerStart", "true");
 		await AsyncStorage.setItem(
 			"countdownTime",
 			JSON.stringify(countdownDate)
 		);
+
+		timerStart = true;
+		await AsyncStorage.setItem("timerStart", JSON.stringify(timerStart));
+
+		topicList[rewardIndex].unlocked = true;
+		unlockedStates = topicList.map(({ unlocked }) => unlocked);
 		await AsyncStorage.setItem(
 			"unlockedRewards",
 			JSON.stringify(unlockedStates)
 		);
+
 		rewardEarned = true;
 
 		checkTopicList();
 		rewardedCallback(false);
 	}
 
-	async function lockRewards() {
+	async function refreshCount() {
 		await AsyncStorage.removeItem("timerStart");
 		await AsyncStorage.removeItem("countdownTime");
-		await AsyncStorage.removeItem("unlockedRewards");
-		unlockedStates = topicList.map(({ unlocked }) => unlocked == false);
+
+		var currentTime = new Date();
+		var countdownDate = {
+			year: currentTime.getFullYear(),
+			month: currentTime.getMonth() + 1,
+			day: currentTime.getDate(),
+			hours: currentTime.getHours() /* Add 24h */,
+			minutes: currentTime.getMinutes() + 20 /* Remove 20min */,
+			seconds: currentTime.getSeconds(),
+		};
+		await AsyncStorage.setItem(
+			"countdownTime",
+			JSON.stringify(countdownDate)
+		);
+
+		timerStart = true;
+		await AsyncStorage.setItem("timerStart", JSON.stringify(timerStart));
+
+		rewardEarned = true;
+		checkTopicList();
+		rewardedCallback(false);
+	}
+
+	function exitReward() {
+		clearInterval(tickVariable);
+		rewardedCallback(false);
 	}
 
 	return (
@@ -436,7 +564,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 				activeOpacity={0.6}
 				style={styles.exit}
 				disabled={loadRewarded || openSelect ? true : false}
-				onPress={() => rewardedCallback(false)}
+				onPress={exitReward}
 			>
 				<Svg height="100%" width="100%" viewBox="0 0 352 352">
 					<Path
@@ -450,10 +578,9 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 
 			<View style={styles.countdownCon}>
 				{countdownStart ? (
-					<Timer
-						hoursMinSecs={countdown}
-						timerCallback={lockRewards}
-					/>
+					<Text style={styles.countdownTimer}>
+						{hrs}:{mins}:{secs}
+					</Text>
 				) : (
 					<Text style={styles.countdownTimer}>00:00:00</Text>
 				)}
@@ -462,95 +589,203 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 						till the unlocked topics are locked
 					</Text>
 				) : (
-					<Text>do zaključavanja otključanih kategorija</Text>
-				)}
-			</View>
-
-			<View style={styles.selectReward}>
-				{language == "eng" ? (
-					<Text style={styles.rewardTitle}>Choose a topic:</Text>
-				) : (
-					<Text style={styles.rewardTitle}>Odaberi kategoriju:</Text>
-				)}
-
-				<TouchableOpacity
-					activeOpacity={0.6}
-					style={styles.selectRewardInput}
-					disabled={disableList}
-					onPress={openSelectList}
-				>
-					<Text style={styles.selectRewardInputText}>
-						{selectedRewardName}
-					</Text>
-					<ListArrow style={styles.selectRewardListArrow} />
-				</TouchableOpacity>
-			</View>
-
-			<View style={styles.rewardedExp}>
-				{language == "eng" ? (
-					<Text style={styles.rewardedExpText}>
-						To unlock it,{"\n"}
-						watch this Advert:
-					</Text>
-				) : (
-					<Text style={styles.rewardedExpText}>
-						Da otključaš,{"\n"}
-						pogledaj jednu Reklamu:
-					</Text>
-				)}
-				{language == "eng" ? (
-					<Text style={styles.rewardedExp2Text}>
-						The unlocked topics will be available for{" "}
-						<Text style={{ color: colors.primary }}>24h</Text>
-						{"\n"}
-						from{" "}
-						<Text style={{ color: colors.primary }}>
-							the last one
-						</Text>{" "}
-						that you unlocked.
-					</Text>
-				) : (
-					<Text style={styles.rewardedExp2Text}>
-						Otključane kategorije biti će dostupne{" "}
-						<Text style={{ color: colors.primary }}>24h</Text>
-						{"\n"}
-						od <Text style={{ color: colors.primary }}>
-							zadnje
-						</Text>{" "}
-						otključane.
+					<Text style={styles.countdownTxt}>
+						do zaključavanja otključanih kategorija
 					</Text>
 				)}
 			</View>
-			<TouchableOpacity
-				style={
-					!loadRewarded
-						? styles.rewardedStart
-						: styles.rewardedDisabled
-				}
-				activeOpacity={1}
-				disabled={loadRewarded || openSelect ? true : false}
-				onPress={() => requestReward()}
-			>
-				{!loadRewarded && language == "eng" ? (
-					<Text style={styles.rewardedStartText}>Watch the Ad</Text>
-				) : null}
-				{!loadRewarded && language == "hrv" ? (
-					<Text style={styles.rewardedStartText}>
-						Pogledaj reklamu
-					</Text>
-				) : null}
-				{loadRewarded ? (
-					<ActivityIndicator size="large" color={colors.white} />
-				) : null}
-			</TouchableOpacity>
-			{language == "eng" ? (
-				<Text style={styles.rewardedDisc}>
-					If no Advert is shown come back a bit later.
-				</Text>
+
+			{!refresh ? (
+				<View style={styles.rewardedCon}>
+					<View style={styles.selectReward}>
+						{language == "eng" ? (
+							<Text style={styles.rewardTitle}>
+								Choose a topic:
+							</Text>
+						) : (
+							<Text style={styles.rewardTitle}>
+								Odaberi kategoriju:
+							</Text>
+						)}
+
+						<TouchableOpacity
+							activeOpacity={0.6}
+							style={styles.selectRewardInput}
+							disabled={disableList}
+							onPress={openSelectList}
+						>
+							<Text style={styles.selectRewardInputText}>
+								{selectedRewardName}
+							</Text>
+							<ListArrow style={styles.selectRewardListArrow} />
+						</TouchableOpacity>
+					</View>
+
+					<View style={styles.rewardedExp}>
+						{language == "eng" ? (
+							<Text style={styles.rewardedExpText}>
+								To unlock it,{"\n"}
+								watch one Advert:
+							</Text>
+						) : (
+							<Text style={styles.rewardedExpText}>
+								Da otključaš,{"\n"}
+								pogledaj jednu Reklamu:
+							</Text>
+						)}
+						{language == "eng" ? (
+							<Text style={styles.rewardedExp2Text}>
+								The unlocked topics will be available for{" "}
+								<Text style={{ color: colors.primary }}>
+									24h
+								</Text>
+								{"\n"}
+								from{" "}
+								<Text style={{ color: colors.primary }}>
+									the last one
+								</Text>{" "}
+								that you unlocked.
+							</Text>
+						) : (
+							<Text style={styles.rewardedExp2Text}>
+								Otključane kategorije biti će dostupne{" "}
+								<Text style={{ color: colors.primary }}>
+									24h
+								</Text>
+								{"\n"}
+								od{" "}
+								<Text style={{ color: colors.primary }}>
+									zadnje
+								</Text>{" "}
+								otključane.
+							</Text>
+						)}
+					</View>
+					<TouchableOpacity
+						style={
+							!loadRewarded
+								? styles.rewardedStart
+								: styles.rewardedDisabled
+						}
+						activeOpacity={1}
+						disabled={loadRewarded || openSelect ? true : false}
+						onPress={() => requestReward()}
+					>
+						{!loadRewarded && language == "eng" ? (
+							<Text style={styles.rewardedStartText}>
+								Watch the Ad
+							</Text>
+						) : null}
+						{!loadRewarded && language == "hrv" ? (
+							<Text style={styles.rewardedStartText}>
+								Pogledaj reklamu
+							</Text>
+						) : null}
+						{loadRewarded ? (
+							<ActivityIndicator
+								size="large"
+								color={colors.white}
+							/>
+						) : null}
+					</TouchableOpacity>
+					{language == "eng" ? (
+						<Text style={styles.rewardedDisc}>
+							If no Advert is shown come back a bit later.
+						</Text>
+					) : (
+						<Text style={styles.rewardedDisc}>
+							Ako se ne prikaže reklama, vrati se kasnije.
+						</Text>
+					)}
+				</View>
 			) : (
-				<Text style={styles.rewardedDisc}>
-					Ako se ne prikaže reklama, vrati se kasnije.
-				</Text>
+				<View style={styles.rewardedCon}>
+					<View style={styles.rewardedExp}>
+						{language == "eng" ? (
+							<Text style={styles.rewardedExpText}>
+								To keep the rewards,{"\n"}
+								watch one Advert:
+							</Text>
+						) : (
+							<Text style={styles.rewardedExpText}>
+								Da zadržiš otključano,{"\n"}
+								pogledaj jednu Reklamu:
+							</Text>
+						)}
+						{language == "eng" ? (
+							<Text style={styles.rewardedExp2Text}>
+								The refresh will give you{" "}
+								<Text style={{ color: colors.primary }}>
+									24h
+								</Text>
+								{"\n"}
+								from{" "}
+								<Text style={{ color: colors.primary }}>
+									the end of the Ad
+								</Text>{" "}
+								{"\n"}
+								and will become available again{"\n"}
+								<Text style={{ color: colors.primary }}>
+									6h
+								</Text>{" "}
+								before the time runs out.
+							</Text>
+						) : (
+							<Text style={styles.rewardedExp2Text}>
+								Ovo će ti dati{" "}
+								<Text style={{ color: colors.primary }}>
+									24h
+								</Text>{" "}
+								od{" "}
+								<Text style={{ color: colors.primary }}>
+									kraja reklame
+								</Text>
+								{"\n"}
+								te će biti ponovno omogućeno{"\n"}
+								<Text style={{ color: colors.primary }}>
+									6h
+								</Text>{" "}
+								prije nego što vrijeme istekne.
+							</Text>
+						)}
+					</View>
+					<TouchableOpacity
+						style={
+							!loadRewarded
+								? styles.rewardedStart
+								: styles.rewardedDisabled
+						}
+						activeOpacity={1}
+						disabled={loadRewarded || openSelect ? true : false}
+						onPress={() => requestReward()}
+					>
+						{!loadRewarded && language == "eng" ? (
+							<Text style={styles.rewardedStartText}>
+								Watch the Ad
+							</Text>
+						) : null}
+						{!loadRewarded && language == "hrv" ? (
+							<Text style={styles.rewardedStartText}>
+								Pogledaj reklamu
+							</Text>
+						) : null}
+						{loadRewarded ? (
+							<ActivityIndicator
+								size="large"
+								color={colors.white}
+							/>
+						) : null}
+					</TouchableOpacity>
+					{language == "eng" ? (
+						<Text style={styles.rewardedDisc}>
+							If no Advert is shown come back a bit later.
+						</Text>
+					) : (
+						<Text style={styles.rewardedDisc}>
+							Ako se ne prikaže reklama, vrati se kasnije.
+						</Text>
+					)}
+				</View>
 			)}
 
 			{!openSelect ? null : (
@@ -723,10 +958,20 @@ export const LandingScreen = ({ gameCallback }) => {
 var deviceWidth = Dimensions.get("screen").width;
 var useWidth = Math.round(deviceWidth + deviceWidth * 0.06);
 export const GameScreen = ({ gameCallback, rewardedCallback }) => {
+	useEffect(() => {
+		checkCountdown();
+		selectedStates = topicList.map(({ selected }) => selected);
+		setSelectedTopics(selectedStates);
+		selectedPresetStates = presetList.map(({ selected }) => selected);
+		setSelectedPreset(selectedPresetStates);
+		checkRefresh();
+	}, []);
+
 	const [language, setLanguage] = useState(languagePref);
 
 	const [selectedTopics, setSelectedTopics] = useState(selectedStates);
 	const [unlockedTopics, setUnlockedTopics] = useState(unlockedStates);
+	const [refresh, setRefresh] = useState(refreshEnabled);
 
 	const [customTopic, setCustomTopic] = useState(false);
 
@@ -748,13 +993,110 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [presetModul, setPresetModul] = useState(false);
 	const [presetModulAlert, setPresetModulAlert] = useState(false);
 
-	useEffect(() => {
+	function checkRefresh() {
+		checkTopicList();
+		setRefresh(refreshEnabled);
+	}
+
+	async function checkCountdown() {
+		var countdownDate = JSON.parse(
+			await AsyncStorage.getItem("countdownTime")
+		);
+
+		if (countdownDate) {
+			var currentTime = new Date();
+			var currentDate = {
+				year: currentTime.getFullYear(),
+				month: currentTime.getMonth() + 1,
+				day: currentTime.getDate(),
+				hours: currentTime.getHours(),
+				minutes: currentTime.getMinutes(),
+				seconds: currentTime.getSeconds(),
+			};
+
+			var countdownH =
+				countdownDate.year +
+				"" +
+				countdownDate.month +
+				"" +
+				countdownDate.day +
+				"" +
+				countdownDate.hours;
+			var currentH =
+				currentDate.year +
+				"" +
+				currentDate.month +
+				"" +
+				currentDate.day +
+				"" +
+				currentDate.hours;
+
+			var stringH =
+				Number(countdownH + "." + countdownDate.minutes) -
+				Number(currentH + "." + currentDate.minutes);
+			var stringMin =
+				Number(
+					countdownH +
+						"" +
+						countdownDate.minutes +
+						"." +
+						countdownDate.seconds
+				) -
+				Number(
+					countdownH +
+						"" +
+						currentDate.minutes +
+						"." +
+						currentDate.seconds
+				);
+			var stringSec =
+				Number(countdownDate.seconds) - Number(currentDate.seconds);
+
+			var diffCountH = Math.trunc(stringH);
+			var diffCountMin = Math.trunc(stringMin);
+			var diffCountSec = Math.trunc(stringSec);
+			if (diffCountMin < 0) {
+				diffCountMin = 60 - Math.abs(stringMin);
+			}
+			if (diffCountSec < 0) {
+				diffCountSec = 60 - Math.abs(stringSec);
+			}
+
+			timerUpdate.hours = Math.trunc(diffCountH);
+			timerUpdate.minutes = Math.trunc(diffCountMin);
+			timerUpdate.seconds = Math.trunc(diffCountSec);
+
+			var checkH = timerUpdate.hours - 1;
+			var checkM = timerUpdate.minutes - 1;
+			var checkS = timerUpdate.seconds - 1;
+			if (checkH <= 0 && checkM <= 0 && checkS <= 0) {
+				lockRewards();
+			} else {
+				checkUnlocked();
+			}
+		}
+	}
+
+	async function lockRewards() {
+		timerUpdate.hours = 0;
+		timerUpdate.minutes = 0;
+		timerUpdate.seconds = 0;
+
+		await AsyncStorage.removeItem("timerStart");
+		await AsyncStorage.removeItem("countdownTime");
+		await AsyncStorage.removeItem("unlockedRewards");
+		timerStart = false;
+
+		for (var i = 0; i < topicList.length; i++) {
+			if (i <= 3) {
+				topicList[i].unlocked = true;
+			} else {
+				topicList[i].unlocked = false;
+			}
+		}
+		unlockedStates = topicList.map(({ unlocked }) => unlocked);
 		checkUnlocked();
-		selectedStates = topicList.map(({ selected }) => selected);
-		setSelectedTopics(selectedStates);
-		selectedPresetStates = presetList.map(({ selected }) => selected);
-		setSelectedPreset(selectedPresetStates);
-	}, []);
+	}
 
 	async function checkUnlocked() {
 		unlockedStates = JSON.parse(
@@ -1346,38 +1688,57 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 								</Text>
 							)}
 						</TouchableHighlight>
-						<TouchableOpacity
-							activeOpacity={0.6}
-							style={
-								!rewardDisabled
-									? styles.bottomReward
-									: styles.bottomRewardDisabled
-							}
-							disabled={rewardDisabled}
-							onPress={openRewardedScreen}
-						>
-							{language == "eng" ? (
-								<Text
-									style={
-										!rewardDisabled
-											? styles.bottomRewardTxt
-											: styles.bottomRewardTxtDisabled
-									}
-								>
-									Unlock more
-								</Text>
-							) : (
-								<Text
-									style={
-										!rewardDisabled
-											? styles.bottomRewardTxt
-											: styles.bottomRewardTxtDisabled
-									}
-								>
-									Otključaj više
-								</Text>
-							)}
-						</TouchableOpacity>
+
+						{!refresh ? (
+							<TouchableOpacity
+								activeOpacity={0.6}
+								style={
+									!rewardDisabled
+										? styles.bottomReward
+										: styles.bottomRewardDisabled
+								}
+								disabled={rewardDisabled}
+								onPress={openRewardedScreen}
+							>
+								{language == "eng" ? (
+									<Text
+										style={
+											!rewardDisabled
+												? styles.bottomRewardTxt
+												: styles.bottomRewardTxtDisabled
+										}
+									>
+										Unlock more
+									</Text>
+								) : (
+									<Text
+										style={
+											!rewardDisabled
+												? styles.bottomRewardTxt
+												: styles.bottomRewardTxtDisabled
+										}
+									>
+										Otključaj više
+									</Text>
+								)}
+							</TouchableOpacity>
+						) : (
+							<TouchableOpacity
+								activeOpacity={0.6}
+								style={styles.bottomReward}
+								onPress={openRewardedScreen}
+							>
+								{language == "eng" ? (
+									<Text style={styles.bottomRewardTxt}>
+										Keep rewards
+									</Text>
+								) : (
+									<Text style={styles.bottomRewardTxt}>
+										Zadrži otključano
+									</Text>
+								)}
+							</TouchableOpacity>
+						)}
 					</View>
 				</Animated.View>
 				<Animated.View
