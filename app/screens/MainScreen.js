@@ -2235,6 +2235,8 @@ function MainScreen() {
 	const [gameOpen, setGameOpen] = useState(false);
 	const [rewardedOpen, setRewardedOpen] = useState(false);
 
+	const refBg = useRef(null);
+
 	async function checkConsent() {
 		consentStatus = await AsyncStorage.getItem("consentStatus");
 		if (consentStatus == undefined || consentStatus == null) {
@@ -2263,6 +2265,9 @@ function MainScreen() {
 	};
 
 	const openRewardedModul = (value) => {
+		if (value == true) {
+			refBg.current.stop();
+		}
 		setRewardedOpen(value);
 	};
 
@@ -2277,7 +2282,7 @@ function MainScreen() {
 				<RewardedScreen rewardedCallback={openRewardedModul} />
 			) : null}
 
-			{!rewardedOpen && !consentOpen ? <MainBG /> : null}
+			{!rewardedOpen && !consentOpen ? <MainBG ref={refBg} /> : null}
 			{!rewardedOpen && consentOpen ? (
 				<ConsentScreen consentCallback={openLanding} />
 			) : null}
