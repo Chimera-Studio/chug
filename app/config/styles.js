@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
 		marginBottom: "0%",
 		marginLeft: "5%",
 		marginRight: "5%",
-		backgroundColor: colors.white,
+		backgroundColor: colors.primary,
 	},
 	ads: {
 		position: "absolute",
@@ -769,6 +769,13 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 		color: colors.grayDark,
 		marginTop: "20%",
+	},
+	rewardedExp3Text: {
+		fontFamily: "SecondaryFont",
+		textAlign: "center",
+		fontSize: 14,
+		color: colors.grayDark,
+		marginTop: "5%",
 	},
 	rewardedStart: {
 		display: "flex",

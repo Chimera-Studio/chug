@@ -272,7 +272,6 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	}
 
 	useEffect(() => {
-		// lockRewards();
 		setHrs(("0" + timerUpdate.hours).slice(-2));
 		setMins(("0" + timerUpdate.minutes).slice(-2));
 		setSecs(("0" + timerUpdate.seconds).slice(-2));
@@ -334,6 +333,13 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 			timerUpdate.seconds === 0
 		) {
 			lockRewards();
+		} else if (
+			timerUpdate.hours <= -1 ||
+			timerUpdate.minutes <= -1 ||
+			timerUpdate.seconds <= -1
+		) {
+			clearInterval(tickVariable);
+			checkRewardCountdown();
 		} else if (timerUpdate.minutes === 0 && timerUpdate.seconds === 0) {
 			var calcTime = timerUpdate.hours - 1;
 			timerUpdate.hours = calcTime;
@@ -612,6 +618,41 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 								otključane.
 							</Text>
 						)}
+						{language == "eng" ? (
+							<Text style={styles.rewardedExp3Text}>
+								After{" "}
+								<Text style={{ color: colors.primary }}>
+									ALL
+								</Text>{" "}
+								topics are unlocked{"\n"}a{" "}
+								<Text style={{ color: colors.primary }}>
+									Keep Rewards
+								</Text>{" "}
+								button{"\n"}
+								will become available{"\n"}
+								<Text style={{ color: colors.primary }}>
+									6h
+								</Text>{" "}
+								before the timer runs out.
+							</Text>
+						) : (
+							<Text style={styles.rewardedExp3Text}>
+								Nakon što su{" "}
+								<Text style={{ color: colors.primary }}>
+									SVE
+								</Text>{" "}
+								kategorije otključane{"\n"}
+								gumb{" "}
+								<Text style={{ color: colors.primary }}>
+									Zadrži otključano
+								</Text>{" "}
+								biti će omogućen{"\n"}
+								<Text style={{ color: colors.primary }}>
+									6h
+								</Text>{" "}
+								prije negoli vrijeme istekne.
+							</Text>
+						)}
 					</View>
 					<TouchableOpacity
 						style={
@@ -820,8 +861,62 @@ export const ConsentScreen = ({ consentCallback }) => {
 };
 
 export const LandingScreen = ({ gameCallback }) => {
+	useEffect(() => {
+		setLangPref();
+	}, []);
+
 	const [language, setLanguage] = useState(languagePref);
 	const [languageModul, setLanguageModul] = useState(false);
+
+	const [opacityMenu, setOpacityMenu] = useState(new Animated.Value(1));
+	const [opacityLang, setOpacityLang] = useState(new Animated.Value(0));
+
+	const fadeEffectIn = () => {
+		Animated.timing(opacityMenu, {
+			toValue: 0,
+			duration: 300,
+			useNativeDriver: true,
+			easing: Easing.linear,
+		}).start();
+
+		setTimeout(function () {
+			setLanguageModul(true);
+
+			Animated.timing(opacityLang, {
+				toValue: 1,
+				duration: 300,
+				useNativeDriver: true,
+				easing: Easing.linear,
+			}).start();
+		}, 300);
+	};
+
+	const fadeEffectOut = () => {
+		Animated.timing(opacityLang, {
+			toValue: 0,
+			duration: 300,
+			useNativeDriver: true,
+			easing: Easing.linear,
+		}).start();
+
+		setTimeout(function () {
+			setLanguageModul(false);
+
+			Animated.timing(opacityMenu, {
+				toValue: 1,
+				duration: 300,
+				useNativeDriver: true,
+				easing: Easing.linear,
+			}).start();
+		}, 300);
+	};
+
+	const fadeMenu = {
+		opacity: opacityMenu,
+	};
+	const fadeLang = {
+		opacity: opacityLang,
+	};
 
 	const changeLang = async (value) => {
 		await AsyncStorage.removeItem("languagePref");
@@ -829,7 +924,7 @@ export const LandingScreen = ({ gameCallback }) => {
 		languagePref = value;
 		await AsyncStorage.setItem("languagePref", value);
 		setLanguage(value);
-		setLanguageModul(false);
+		fadeEffectOut();
 	};
 
 	const setLangPref = async () => {
@@ -841,12 +936,11 @@ export const LandingScreen = ({ gameCallback }) => {
 			setLanguage(languagePref);
 		}
 	};
-	setLangPref();
 
 	return (
 		<View style={styles.screenWrapper}>
-			{languageModul ? null : (
-				<View style={styles.landingContainer}>
+			{!languageModul ? (
+				<Animated.View style={[styles.landingContainer, fadeMenu]}>
 					<Text style={styles.landingTitle}>Chug</Text>
 					<TouchableHighlight
 						onPress={() => gameCallback(true)}
@@ -860,7 +954,7 @@ export const LandingScreen = ({ gameCallback }) => {
 						)}
 					</TouchableHighlight>
 					<TouchableHighlight
-						onPress={() => setLanguageModul(true)}
+						onPress={fadeEffectIn}
 						underlayColor={colors.white}
 						style={styles.landingBtn}
 					>
@@ -870,11 +964,9 @@ export const LandingScreen = ({ gameCallback }) => {
 							<Text style={styles.landingTxt}>Jezici</Text>
 						)}
 					</TouchableHighlight>
-				</View>
-			)}
-
-			{!languageModul ? null : (
-				<View style={styles.landingContainer}>
+				</Animated.View>
+			) : (
+				<Animated.View style={[styles.landingContainer, fadeLang]}>
 					<TouchableHighlight
 						onPress={() => changeLang("eng")}
 						underlayColor={colors.white}
@@ -890,7 +982,7 @@ export const LandingScreen = ({ gameCallback }) => {
 					>
 						<Text style={styles.landingTxt}>Hrvatski</Text>
 					</TouchableHighlight>
-				</View>
+				</Animated.View>
 			)}
 		</View>
 	);
@@ -931,6 +1023,68 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [customModul, setCustomModul] = useState(false);
 	const [presetModul, setPresetModul] = useState(false);
 	const [presetModulAlert, setPresetModulAlert] = useState(false);
+	const fadeAlert = useState(new Animated.Value(0))[0];
+	const fadeCustomModul = useState(new Animated.Value(0))[0];
+	const fadePresetModul = useState(new Animated.Value(0))[0];
+
+	function alertFade() {
+		Animated.timing(fadeAlert, {
+			toValue: 1,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+		setTimeout(function () {
+			Animated.timing(fadeAlert, {
+				toValue: 0,
+				duration: 300,
+				useNativeDriver: true,
+			}).start();
+		}, 2700);
+	}
+
+	const showAlert = {
+		opacity: fadeAlert,
+	};
+
+	function customFadeIn() {
+		Animated.timing(fadeCustomModul, {
+			toValue: 1,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	function customFadeOut() {
+		Animated.timing(fadeCustomModul, {
+			toValue: 0,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	const showCustomModul = {
+		opacity: fadeCustomModul,
+	};
+
+	function presetFadeIn() {
+		Animated.timing(fadePresetModul, {
+			toValue: 1,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	function presetFadeOut() {
+		Animated.timing(fadePresetModul, {
+			toValue: 0,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	const showPresetModul = {
+		opacity: fadePresetModul,
+	};
 
 	async function checkCountdown() {
 		var countdownDate = JSON.parse(
@@ -1150,6 +1304,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		} else {
 			if (value == "custom" && custom_list.length > 0) {
 				setCustomModul(true);
+				customFadeIn();
 			} else if (value == "custom" && custom_list.length == 0) {
 				topicList[index].selected = false;
 				setCustomTopic(false);
@@ -1232,7 +1387,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 	const alertDelay = () => {
 		setAlertShow(true);
-
+		alertFade();
 		setTimeout(function () {
 			setAlertShow(false);
 			setRuleAdded(false);
@@ -1244,6 +1399,13 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		}, 3000);
 	};
 
+	const keepCustom = () => {
+		customFadeOut();
+		setTimeout(function () {
+			setCustomModul(false);
+		}, 300);
+	};
+
 	const clearCustom = () => {
 		custom_list = [];
 		customListPrompts = custom_list.slice();
@@ -1253,8 +1415,11 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		selectedStates = topicList.map(({ selected }) => selected);
 		setSelectedTopics(selectedStates);
 
-		setCustomTopic(false);
-		setCustomModul(false);
+		customFadeOut();
+		setTimeout(function () {
+			setCustomTopic(false);
+			setCustomModul(false);
+		}, 300);
 	};
 
 	const startGame = async () => {
@@ -1307,6 +1472,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			setGamePrompt(game_list[0]);
 
 			custom_list = [];
+			customListPrompts = custom_list.slice();
+			setCustomListMap(customListPrompts);
 			gameCounter = 0;
 
 			startGameEffect();
@@ -1318,6 +1485,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		shuffle(game_list);
 
 		custom_list = [];
+		customListPrompts = custom_list.slice();
+		setCustomListMap(customListPrompts);
 		gameCounter = 0;
 
 		toggleMoreModul(false);
@@ -1348,6 +1517,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const openPresetModul = () => {
 		if (custom_list.length > 0) {
 			setPresetModul(true);
+			presetFadeIn();
 		} else {
 			setEmptyCustom(true);
 			alertDelay();
@@ -1355,9 +1525,12 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	};
 
 	const exitPresetModul = () => {
-		setPresetModul(false);
-		setPresetModulAlert(false);
-		setCustomPresetTitle("");
+		presetFadeOut();
+		setTimeout(function () {
+			setPresetModul(false);
+			setPresetModulAlert(false);
+			setCustomPresetTitle("");
+		}, 300);
 	};
 
 	const save = () => {
@@ -1411,10 +1584,13 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		presetListTitle = presetList.map(({ title }) => title);
 		setPresetListMap(presetListTitle);
 
-		setPresetModul(false);
-		setPresetModulAlert(false);
-		setCustomPreset(true);
-		setCustomPresetTitle("");
+		presetFadeOut();
+		setTimeout(function () {
+			setPresetModul(false);
+			setPresetModulAlert(false);
+			setCustomPreset(true);
+			setCustomPresetTitle("");
+		}, 300);
 
 		setPresetSaved(true);
 		alertDelay();
@@ -1652,7 +1828,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 								</Text>
 							) : (
 								<Text style={styles.noPresetTitle}>
-									Nemaš spremljena pravila!
+									Nemaš spremljen preset!
 								</Text>
 							)}
 						</View>
@@ -1769,9 +1945,15 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							underlayColor={colors.white}
 							style={styles.savePresetBtn}
 						>
-							<Text style={styles.savePresetBtnTxt}>
-								Save Preset
-							</Text>
+							{language == "eng" ? (
+								<Text style={styles.savePresetBtnTxt}>
+									Create preset
+								</Text>
+							) : (
+								<Text style={styles.savePresetBtnTxt}>
+									Stvori preset
+								</Text>
+							)}
 						</TouchableHighlight>
 					</View>
 					<View style={styles.customListWrapper}>
@@ -1892,7 +2074,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 								</Text>
 							) : (
 								<Text style={styles.bottomSecondaryTxt}>
-									Prilagodi
+									Podesi
 								</Text>
 							)}
 						</TouchableHighlight>
@@ -1902,11 +2084,11 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 					<View style={styles.inputCont}>
 						{language == "eng" ? (
 							<Text style={styles.inputExp}>
-								Add more of your own prompts...
+								Add more prompts:
 							</Text>
 						) : (
 							<Text style={styles.inputExp}>
-								Dodaj još svojih pravila:
+								Dodaj još pravila:
 							</Text>
 						)}
 						<View style={styles.inputFieldCont}>
@@ -1987,7 +2169,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			</View>
 
 			{!alertShow ? null : (
-				<View style={styles.alertWrapper}>
+				<Animated.View style={[styles.alertWrapper, showAlert]}>
 					{language == "eng" && ruleAdded ? (
 						<Text style={styles.alertText}>Rule added!</Text>
 					) : null}
@@ -2022,7 +2204,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							You need to add rules to be able to save them!
 						</Text>
 					) : null}
-					{language == "hrv" && emptyList ? (
+					{language == "hrv" && emptyCustom ? (
 						<Text style={styles.alertText}>
 							Moraš dodati pravila da ih možeš spremiti!
 						</Text>
@@ -2031,7 +2213,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 					{language == "eng" && presetSaved ? (
 						<Text style={styles.alertText}>Preset saved!</Text>
 					) : null}
-					{language == "hrv" && emptyList ? (
+					{language == "hrv" && presetSaved ? (
 						<Text style={styles.alertText}>Spremljeno!</Text>
 					) : null}
 
@@ -2045,14 +2227,61 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							Moraš odabrati barem jednu kategoriju!
 						</Text>
 					) : null}
-				</View>
+				</Animated.View>
+			)}
+
+			{!customModul ? null : (
+				<Animated.View style={[styles.modulWrapper, showCustomModul]}>
+					{language == "eng" ? (
+						<Text style={styles.modulExp}>
+							This will delete the custom rules you added!
+						</Text>
+					) : (
+						<Text style={styles.modulExp}>
+							Ovo će obrisati pravila koja ste dodali!
+						</Text>
+					)}
+
+					<View style={styles.modulContainer}>
+						<TouchableOpacity
+							activeOpacity={0.8}
+							style={styles.modulBtn}
+							onPress={keepCustom}
+						>
+							{language == "eng" ? (
+								<Text style={styles.modulText}>Keep</Text>
+							) : (
+								<Text style={styles.modulText}>Zadrži</Text>
+							)}
+						</TouchableOpacity>
+						<TouchableOpacity
+							activeOpacity={0.8}
+							style={styles.modulBtn}
+							onPress={clearCustom}
+						>
+							{language == "eng" ? (
+								<Text style={styles.modulText}>Delete</Text>
+							) : (
+								<Text style={styles.modulText}>Obriši</Text>
+							)}
+						</TouchableOpacity>
+					</View>
+				</Animated.View>
 			)}
 
 			{!presetModul ? null : (
-				<View style={styles.presetModulWrapper}>
-					<Text style={styles.presetModulExp}>
-						Add a preset name:
-					</Text>
+				<Animated.View
+					style={[styles.presetModulWrapper, showPresetModul]}
+				>
+					{language == "eng" ? (
+						<Text style={styles.presetModulExp}>
+							Add a preset name:
+						</Text>
+					) : (
+						<Text style={styles.presetModulExp}>
+							Dodaj ime za preset:
+						</Text>
+					)}
 					<View style={styles.presetInputFieldCont}>
 						<TextInput
 							style={styles.presetInputField}
@@ -2068,25 +2297,45 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							underlayColor={colors.white}
 							style={styles.presetInputFieldBtn}
 						>
-							<Text style={styles.presetInputFieldBtnTxt}>
-								Save
-							</Text>
+							{language == "eng" ? (
+								<Text style={styles.presetInputFieldBtnTxt}>
+									Save
+								</Text>
+							) : (
+								<Text style={styles.presetInputFieldBtnTxt}>
+									Spremi
+								</Text>
+							)}
 						</TouchableHighlight>
 					</View>
 					{!presetModulAlert ? null : (
 						<View style={styles.presetModulContainer}>
-							<Text style={styles.presetModulDisc}>
-								Preset with this name already exists.{"\n"}
-								Change the name or update that preset?
-							</Text>
+							{language == "eng" ? (
+								<Text style={styles.presetModulDisc}>
+									A preset with this name already exists.
+									{"\n"}
+									Change the name or update that preset?
+								</Text>
+							) : (
+								<Text style={styles.presetModulDisc}>
+									Preset sa ovim imenom već postoji.{"\n"}
+									Promijeni ime ili ažuriraj postojeći?
+								</Text>
+							)}
 							<TouchableOpacity
 								activeOpacity={0.8}
 								style={styles.presetModulBtn}
 								onPress={update}
 							>
-								<Text style={styles.presetModulText}>
-									Update
-								</Text>
+								{language == "eng" ? (
+									<Text style={styles.presetModulText}>
+										Update
+									</Text>
+								) : (
+									<Text style={styles.presetModulText}>
+										Ažuriraj
+									</Text>
+								)}
 							</TouchableOpacity>
 						</View>
 					)}
@@ -2102,31 +2351,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							/>
 						</Svg>
 					</TouchableOpacity>
-				</View>
-			)}
-
-			{!customModul ? null : (
-				<View style={styles.modulWrapper}>
-					<Text style={styles.modulExp}>
-						This will delete the custom rules you added!
-					</Text>
-					<View style={styles.modulContainer}>
-						<TouchableOpacity
-							activeOpacity={0.8}
-							style={styles.modulBtn}
-							onPress={() => setCustomModul(false)}
-						>
-							<Text style={styles.modulText}>Keep</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							activeOpacity={0.8}
-							style={styles.modulBtn}
-							onPress={clearCustom}
-						>
-							<Text style={styles.modulText}>Delete</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
+				</Animated.View>
 			)}
 		</View>
 	);
@@ -2139,8 +2364,34 @@ function MainScreen() {
 	const [rewardedOpen, setRewardedOpen] = useState(false);
 
 	const refBg = useRef(null);
+	const opacity = useState(new Animated.Value(0))[0];
+
+	function initialFadeIn() {
+		Animated.timing(opacity, {
+			toValue: 1,
+			duration: 0,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	function fadeIn() {
+		Animated.timing(opacity, {
+			toValue: 1,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
+
+	function fadeOut() {
+		Animated.timing(opacity, {
+			toValue: 0,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+	}
 
 	useEffect(() => {
+		initialFadeIn();
 		checkConsent();
 		askForPermission();
 	}, []);
@@ -2151,8 +2402,12 @@ function MainScreen() {
 			consentStatus = true;
 			setConsentOpen(consentStatus);
 		} else {
-			consentStatus = false;
-			setConsentOpen(consentStatus);
+			fadeOut();
+			setTimeout(function () {
+				consentStatus = false;
+				setConsentOpen(consentStatus);
+				fadeIn();
+			}, 150);
 		}
 	}
 
@@ -2160,18 +2415,30 @@ function MainScreen() {
 		var consentVal = value.toString();
 		await AsyncStorage.removeItem("consentStatus");
 		await AsyncStorage.setItem("consentStatus", consentVal);
-		setConsentOpen(value);
+		fadeOut();
+		setTimeout(function () {
+			setConsentOpen(value);
+			fadeIn();
+		}, 150);
 	};
 
 	const openGame = (value) => {
-		setGameOpen(value);
+		fadeOut();
+		setTimeout(function () {
+			setGameOpen(value);
+			fadeIn();
+		}, 150);
 	};
 
 	const openRewardedModul = (value) => {
 		if (value == true) {
 			refBg.current.stop();
 		}
-		setRewardedOpen(value);
+		fadeOut();
+		setTimeout(function () {
+			setRewardedOpen(value);
+			fadeIn();
+		}, 150);
 	};
 
 	return (
@@ -2182,21 +2449,29 @@ function MainScreen() {
 
 			{rewardedOpen || consentOpen ? <RewardedBG /> : null}
 			{rewardedOpen ? (
-				<RewardedScreen rewardedCallback={openRewardedModul} />
+				<Animated.View style={{ opacity, flex: 1 }}>
+					<RewardedScreen rewardedCallback={openRewardedModul} />
+				</Animated.View>
 			) : null}
 
 			{!rewardedOpen && !consentOpen ? <MainBG ref={refBg} /> : null}
 			{!rewardedOpen && consentOpen ? (
-				<ConsentScreen consentCallback={openLanding} />
+				<Animated.View style={{ opacity, flex: 1 }}>
+					<ConsentScreen consentCallback={openLanding} />
+				</Animated.View>
 			) : null}
 			{!rewardedOpen && !gameOpen && !consentOpen ? (
-				<LandingScreen gameCallback={openGame} />
+				<Animated.View style={{ opacity, flex: 1 }}>
+					<LandingScreen gameCallback={openGame} />
+				</Animated.View>
 			) : null}
 			{!rewardedOpen && gameOpen ? (
-				<GameScreen
-					gameCallback={openGame}
-					rewardedCallback={openRewardedModul}
-				/>
+				<Animated.View style={{ opacity, flex: 1 }}>
+					<GameScreen
+						gameCallback={openGame}
+						rewardedCallback={openRewardedModul}
+					/>
+				</Animated.View>
 			) : null}
 
 			<View style={styles.ads}>

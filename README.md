@@ -26,6 +26,18 @@ The sentence will describe a person and those who are related to it, drink. Ther
 
 It requires no account, no swapping the phone around the room, just a cup of drink and good fun is guaranteed! :beer:
 
+### New features and updates
+
+-   [x] Drink responsibly consent
+-   [x] See added prompts & delete them
+-   [x] Create custom presets & delete them
+-   [x] Rewards available for 24h
+-   [x] Countdown timer for locking rewards
+-   [x] Keep rewards for another 24h
+-   [x] Bilingual support
+-   [ ] Check preset content
+-   [ ] Q&A mode
+
 ## The Chimera Team
 
 -   [Dario Dumlijan - Developer](https://linktr.ee/DarioDumlijan)
