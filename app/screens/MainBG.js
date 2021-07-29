@@ -8,6 +8,7 @@ import { StyleSheet, Platform, View, Dimensions } from "react-native";
 import colors from "../config/colors";
 import Foam from "../assets/img/foam.svg";
 
+var animationFPS = 1000 / 60;
 var bubbleFPS;
 var bubbles30 = [];
 var bubbles50 = [];
@@ -17,11 +18,11 @@ var bubbles50posY;
 const bubblesOnScreen = 30;
 const maxBubbleWidth = 40;
 const minBubbleWidth = 20;
-const maxBubbleSpeed = 1.5;
+const maxBubbleSpeed = 1.8;
 const minBubbleSpeed = 0.5;
 
-var deviceHeight = Math.round(Dimensions.get("screen").height);
 var deviceWidth = Math.round(Dimensions.get("screen").width);
+var deviceHeight = Math.round(Dimensions.get("screen").height);
 const MainBG = forwardRef((props, ref) => {
 	const [bubblesReady, setBubblesReady] = useState(false);
 	const [bubbles30Y, setBubbles30Y] = useState();
@@ -36,8 +37,9 @@ const MainBG = forwardRef((props, ref) => {
 				Math.floor(Math.random() * (maxBubbleWidth - minBubbleWidth)) +
 				minBubbleWidth;
 			var obj30 = {};
-			obj30["top"] = Math.floor(Math.random() * (deviceHeight - 0)) + 0;
 			obj30["left"] = Math.floor(Math.random() * (deviceWidth - 0)) + 0;
+			obj30["bottom"] =
+				Math.floor(Math.random() * (deviceHeight - 0)) + 0;
 			obj30["width"] = width30;
 			obj30["speed"] =
 				Math.floor(Math.random() * (maxBubbleSpeed - minBubbleSpeed)) +
@@ -48,16 +50,17 @@ const MainBG = forwardRef((props, ref) => {
 				Math.floor(Math.random() * (maxBubbleWidth - minBubbleWidth)) +
 				minBubbleWidth;
 			var obj50 = {};
-			obj50["top"] = Math.floor(Math.random() * (deviceHeight - 0)) + 0;
 			obj50["left"] = Math.floor(Math.random() * (deviceWidth - 0)) + 0;
+			obj50["bottom"] =
+				Math.floor(Math.random() * (deviceHeight - 0)) + 0;
 			obj50["width"] = width50;
 			obj50["speed"] =
 				Math.floor(Math.random() * (maxBubbleSpeed - minBubbleSpeed)) +
 				minBubbleSpeed;
 			bubbles50.push(obj50);
 		}
-		bubbles30posY = bubbles30.map(({ top }) => top);
-		bubbles50posY = bubbles50.map(({ top }) => top);
+		bubbles30posY = bubbles30.map(({ bottom }) => bottom);
+		bubbles50posY = bubbles50.map(({ bottom }) => bottom);
 		setBubbles30Y(bubbles30posY);
 		setBubbles50Y(bubbles50posY);
 
@@ -66,10 +69,10 @@ const MainBG = forwardRef((props, ref) => {
 
 	function float() {
 		for (var i = 0; i < bubbles30.length; i++) {
-			var newY30 = bubbles30[i].top + bubbles30[i].speed;
-			var newY50 = bubbles50[i].top + bubbles50[i].speed;
+			var newY30 = bubbles30[i].bottom + bubbles30[i].speed;
+			var newY50 = bubbles50[i].bottom + bubbles50[i].speed;
 			if (newY30 >= deviceHeight) {
-				bubbles30[i].top = 0;
+				bubbles30[i].bottom = 0;
 				bubbles30[i].left =
 					Math.floor(Math.random() * (deviceWidth - 0)) + 0;
 				bubbles30[i].speed =
@@ -77,7 +80,7 @@ const MainBG = forwardRef((props, ref) => {
 						Math.random() * (maxBubbleSpeed - minBubbleSpeed)
 					) + minBubbleSpeed;
 			} else if (newY50 >= deviceHeight) {
-				bubbles50[i].top = 0;
+				bubbles50[i].bottom = 0;
 				bubbles50[i].left =
 					Math.floor(Math.random() * (deviceWidth - 0)) + 0;
 				bubbles50[i].speed =
@@ -85,12 +88,12 @@ const MainBG = forwardRef((props, ref) => {
 						Math.random() * (maxBubbleSpeed - minBubbleSpeed)
 					) + minBubbleSpeed;
 			} else {
-				bubbles30[i].top = newY30;
-				bubbles50[i].top = newY50;
+				bubbles30[i].bottom = newY30;
+				bubbles50[i].bottom = newY50;
 			}
 		}
-		bubbles30posY = bubbles30.map(({ top }) => top);
-		bubbles50posY = bubbles50.map(({ top }) => top);
+		bubbles30posY = bubbles30.map(({ bottom }) => bottom);
+		bubbles50posY = bubbles50.map(({ bottom }) => bottom);
 		setBubbles30Y(bubbles30posY);
 		setBubbles50Y(bubbles50posY);
 	}
@@ -101,7 +104,7 @@ const MainBG = forwardRef((props, ref) => {
 
 	useEffect(() => {
 		initBubbles();
-		bubbleFPS = setInterval(() => float(), 16.7);
+		bubbleFPS = setInterval(() => float(), animationFPS);
 	}, []);
 
 	useImperativeHandle(ref, () => {
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
 		position: "absolute",
 		aspectRatio: 1 / 1,
 		backgroundColor: colors.white,
-		opacity: minBubbleSpeed,
+		opacity: 0.5,
 	},
 });
 

@@ -71,6 +71,8 @@ var movies_hrv = hrv_movies;
 var cars_hrv = hrv_cars;
 var sports_hrv = hrv_sports;
 var food_hrv = hrv_food;
+const countdownHours = 24;
+const refreshHours = 6;
 
 var game_list = new Array();
 var custom_list = new Array();
@@ -152,11 +154,14 @@ var rewardListName;
 var rewardListVal;
 var rewardIndex;
 var rewardDisabled = false;
-var refreshEnabled = true;
+var refreshEnabled = false;
 var gameCounter = 0;
 var consentStatus = true;
 var languagePref = "eng";
 var personalisedAds = false;
+
+var deviceWidth = Dimensions.get("screen").width;
+var useWidth = Math.round(deviceWidth + deviceWidth * 0.06);
 
 function shuffle(e) {
 	for (var t, l, n = e.length; 0 !== n; )
@@ -167,20 +172,22 @@ function shuffle(e) {
 	return e;
 }
 
-function checkTopicList() {
-	for (var i = 0; i < topicList.length; i++) {
-		if (topicList[i].unlocked == false) {
-			rewardDisabled = false;
-			break;
-		} else {
-			rewardDisabled = true;
-		}
+function ms2Time(value) {
+	function pad(n, z) {
+		z = z || 2;
+		return ("00" + n).slice(-z);
 	}
-	if (rewardDisabled && !refreshEnabled) {
-		refreshEnabled = true;
-	} else {
-		refreshEnabled = false;
-	}
+
+	var ms = value % 1000;
+	value = (value - ms) / 1000;
+	var secs = value % 60;
+	value = (value - secs) / 60;
+	var mins = value % 60;
+	var hrs = (value - mins) / 60;
+
+	timerUpdate.hours = pad(hrs);
+	timerUpdate.minutes = pad(mins);
+	timerUpdate.seconds = pad(secs);
 }
 
 async function askForPermission() {
@@ -230,6 +237,17 @@ async function askForReview() {
 	}
 }
 
+export const Exit = () => {
+	return (
+		<Svg height="100%" width="100%" viewBox="0 0 352 352">
+			<Path
+				fill={colors.white}
+				d="M242.7,176L342.8,75.9c12.3-12.3,12.3-32.2,0-44.5L320.6,9.2c-12.3-12.3-32.2-12.3-44.5,0L176,109.3L75.9,9.2 C63.7-3.1,43.7-3.1,31.5,9.2L9.2,31.4c-12.3,12.3-12.3,32.2,0,44.5L109.3,176L9.2,276.1c-12.3,12.3-12.3,32.2,0,44.5l22.2,22.2 c12.3,12.3,32.2,12.3,44.5,0L176,242.7l100.1,100.1c12.3,12.3,32.2,12.3,44.5,0l22.2-22.2c12.3-12.3,12.3-32.2,0-44.5L242.7,176z"
+			/>
+		</Svg>
+	);
+};
+
 export const RewardedScreen = ({ rewardedCallback }) => {
 	rewardList = [];
 	var rewardEarned = false;
@@ -259,15 +277,9 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		setMins(("0" + timerUpdate.minutes).slice(-2));
 		setSecs(("0" + timerUpdate.seconds).slice(-2));
 		checkTimerStart();
-		checkRefresh();
 		setSelectedRewardName(rewardListName);
 		rewardIndex = topicList.findIndex((obj) => obj.value == rewardListVal);
 	}, []);
-
-	function checkRefresh() {
-		checkTopicList();
-		setRefresh(refreshEnabled);
-	}
 
 	const [language, setLanguage] = useState(languagePref);
 	const [loadRewarded, setLoadRewarded] = useState(false);
@@ -292,6 +304,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 			timerStart = false;
 			setCountdownStart(timerStart);
 		}
+		checkTopicList();
 	}
 
 	async function checkRewardCountdown() {
@@ -299,75 +312,18 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 			await AsyncStorage.getItem("countdownTime")
 		);
 
-		var currentTime = new Date();
-		var currentDate = {
-			year: currentTime.getFullYear(),
-			month: currentTime.getMonth() + 1,
-			day: currentTime.getDate(),
-			hours: currentTime.getHours(),
-			minutes: currentTime.getMinutes(),
-			seconds: currentTime.getSeconds(),
-		};
+		var currentDate = new Date().getTime();
+		var timeDiff = countdownDate - currentDate;
+		ms2Time(timeDiff);
 
-		var countdownH =
-			countdownDate.year +
-			"" +
-			countdownDate.month +
-			"" +
-			countdownDate.day +
-			"" +
-			countdownDate.hours;
-		var currentH =
-			currentDate.year +
-			"" +
-			currentDate.month +
-			"" +
-			currentDate.day +
-			"" +
-			currentDate.hours;
-
-		var stringH =
-			Number(countdownH + "." + countdownDate.minutes) -
-			Number(currentH + "." + currentDate.minutes);
-		var stringMin =
-			Number(
-				countdownH +
-					"" +
-					countdownDate.minutes +
-					"." +
-					countdownDate.seconds
-			) -
-			Number(
-				countdownH +
-					"" +
-					currentDate.minutes +
-					"." +
-					currentDate.seconds
-			);
-		var stringSec =
-			Number(countdownDate.seconds) - Number(currentDate.seconds);
-
-		var diffCountH = Math.trunc(stringH);
-		var diffCountMin = Math.trunc(stringMin);
-		var diffCountSec = Math.trunc(stringSec);
-		if (diffCountMin < 0) {
-			diffCountMin = 60 - Math.abs(stringMin);
-		}
-		if (diffCountSec < 0) {
-			diffCountSec = 60 - Math.abs(stringSec);
-		}
-
-		timerUpdate.hours = Math.trunc(diffCountH);
-		timerUpdate.minutes = Math.trunc(diffCountMin);
-		timerUpdate.seconds = Math.trunc(diffCountSec);
-
-		tickVariable = setInterval(() => tick(), 1000);
-
-		var checkH = timerUpdate.hours - 1;
-		var checkM = timerUpdate.minutes - 1;
-		var checkS = timerUpdate.seconds - 1;
-		if (checkH <= 0 && checkM <= 0 && checkS <= 0) {
+		if (
+			timerUpdate.hours <= 0 &&
+			timerUpdate.minutes <= 0 &&
+			timerUpdate.seconds <= 0
+		) {
 			lockRewards();
+		} else {
+			tickVariable = setInterval(() => tick(), 1000);
 		}
 	}
 
@@ -440,17 +396,35 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		rewardIndex = topicList.findIndex((obj) => obj.value == rewardListVal);
 	}
 
-	async function requestReward() {
-		clearInterval(tickVariable);
-		setLoadRewarded(true);
+	function checkTopicList() {
+		for (var i = 0; i < unlockedStates.length; i++) {
+			if (unlockedStates[i] == false) {
+				rewardDisabled = false;
+				break;
+			} else {
+				rewardDisabled = true;
+			}
+		}
+		if (rewardDisabled) {
+			refreshEnabled = true;
+			setRefresh(refreshEnabled);
+		}
+	}
 
-		await AdMobRewarded.setAdUnitID(
-			Platform.OS === "ios"
-				? "ca-app-pub-3940256099942544/1712485313"
-				: "ca-app-pub-3940256099942544/5224354917"
-		); // Test ID, Replace with your-admob-unit-id
-		await AdMobRewarded.requestAdAsync();
-		await AdMobRewarded.showAdAsync();
+	const openSelectList = () => {
+		setOpenSelect(true);
+	};
+
+	const selectedTopic = (name, value) => {
+		setSelectedRewardName(name);
+		rewardIndex = topicList.findIndex((obj) => obj.value == value);
+
+		setOpenSelect(false);
+	};
+
+	function exitReward() {
+		clearInterval(tickVariable);
+		rewardedCallback(false);
 	}
 
 	AdMobRewarded.addEventListener("rewardedVideoDidFailToLoad", () => {
@@ -466,12 +440,25 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	});
 
 	AdMobRewarded.addEventListener("rewardedVideoUserDidEarnReward", () => {
-		if (!refreshEnabled) {
+		if (!rewardDisabled) {
 			unlockTopic();
 		} else {
 			refreshCount();
 		}
 	});
+
+	async function requestReward() {
+		clearInterval(tickVariable);
+		setLoadRewarded(true);
+
+		await AdMobRewarded.setAdUnitID(
+			Platform.OS === "ios"
+				? "ca-app-pub-3940256099942544/1712485313"
+				: "ca-app-pub-3940256099942544/5224354917"
+		); // Test ID, Replace with your-admob-unit-id
+		await AdMobRewarded.requestAdAsync();
+		await AdMobRewarded.showAdAsync();
+	}
 
 	function resetRewarded() {
 		if (loadRewarded == true && rewardEarned == false) {
@@ -481,31 +468,12 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		}
 	}
 
-	const openSelectList = () => {
-		setOpenSelect(true);
-	};
-
-	const selectedTopic = (name, value) => {
-		setSelectedRewardName(name);
-		rewardIndex = topicList.findIndex((obj) => obj.value == value);
-
-		setOpenSelect(false);
-	};
-
 	async function unlockTopic() {
 		await AsyncStorage.removeItem("timerStart");
 		await AsyncStorage.removeItem("countdownTime");
 		await AsyncStorage.removeItem("unlockedRewards");
 
-		var currentTime = new Date();
-		var countdownDate = {
-			year: currentTime.getFullYear(),
-			month: currentTime.getMonth() + 1,
-			day: currentTime.getDate(),
-			hours: currentTime.getHours() /* Add 24h */,
-			minutes: currentTime.getMinutes() + 10 /* Remove 10min */,
-			seconds: currentTime.getSeconds(),
-		};
+		var countdownDate = new Date().getTime() + countdownHours * 36e5;
 		await AsyncStorage.setItem(
 			"countdownTime",
 			JSON.stringify(countdownDate)
@@ -522,8 +490,6 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		);
 
 		rewardEarned = true;
-
-		checkTopicList();
 		rewardedCallback(false);
 	}
 
@@ -531,15 +497,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		await AsyncStorage.removeItem("timerStart");
 		await AsyncStorage.removeItem("countdownTime");
 
-		var currentTime = new Date();
-		var countdownDate = {
-			year: currentTime.getFullYear(),
-			month: currentTime.getMonth() + 1,
-			day: currentTime.getDate(),
-			hours: currentTime.getHours() /* Add 24h */,
-			minutes: currentTime.getMinutes() + 20 /* Remove 20min */,
-			seconds: currentTime.getSeconds(),
-		};
+		var countdownDate = new Date().getTime() + countdownHours * 36e5;
 		await AsyncStorage.setItem(
 			"countdownTime",
 			JSON.stringify(countdownDate)
@@ -549,12 +507,6 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 		await AsyncStorage.setItem("timerStart", JSON.stringify(timerStart));
 
 		rewardEarned = true;
-		checkTopicList();
-		rewardedCallback(false);
-	}
-
-	function exitReward() {
-		clearInterval(tickVariable);
 		rewardedCallback(false);
 	}
 
@@ -838,17 +790,6 @@ export const RewardedScreen = ({ rewardedCallback }) => {
 	);
 };
 
-export const Exit = () => {
-	return (
-		<Svg height="100%" width="100%" viewBox="0 0 352 352">
-			<Path
-				fill={colors.white}
-				d="M242.7,176L342.8,75.9c12.3-12.3,12.3-32.2,0-44.5L320.6,9.2c-12.3-12.3-32.2-12.3-44.5,0L176,109.3L75.9,9.2 C63.7-3.1,43.7-3.1,31.5,9.2L9.2,31.4c-12.3,12.3-12.3,32.2,0,44.5L109.3,176L9.2,276.1c-12.3,12.3-12.3,32.2,0,44.5l22.2,22.2 c12.3,12.3,32.2,12.3,44.5,0L176,242.7l100.1,100.1c12.3,12.3,32.2,12.3,44.5,0l22.2-22.2c12.3-12.3,12.3-32.2,0-44.5L242.7,176z"
-			/>
-		</Svg>
-	);
-};
-
 export const ConsentScreen = ({ consentCallback }) => {
 	return (
 		<View style={styles.consentWrapper}>
@@ -955,22 +896,20 @@ export const LandingScreen = ({ gameCallback }) => {
 	);
 };
 
-var deviceWidth = Dimensions.get("screen").width;
-var useWidth = Math.round(deviceWidth + deviceWidth * 0.06);
 export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	useEffect(() => {
-		checkCountdown();
 		selectedStates = topicList.map(({ selected }) => selected);
 		setSelectedTopics(selectedStates);
 		selectedPresetStates = presetList.map(({ selected }) => selected);
 		setSelectedPreset(selectedPresetStates);
-		checkRefresh();
+		checkCountdown();
 	}, []);
 
 	const [language, setLanguage] = useState(languagePref);
 
 	const [selectedTopics, setSelectedTopics] = useState(selectedStates);
 	const [unlockedTopics, setUnlockedTopics] = useState(unlockedStates);
+	const [disabled, setDisabled] = useState(rewardDisabled);
 	const [refresh, setRefresh] = useState(refreshEnabled);
 
 	const [customTopic, setCustomTopic] = useState(false);
@@ -993,83 +932,21 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [presetModul, setPresetModul] = useState(false);
 	const [presetModulAlert, setPresetModulAlert] = useState(false);
 
-	function checkRefresh() {
-		checkTopicList();
-		setRefresh(refreshEnabled);
-	}
-
 	async function checkCountdown() {
 		var countdownDate = JSON.parse(
 			await AsyncStorage.getItem("countdownTime")
 		);
 
 		if (countdownDate) {
-			var currentTime = new Date();
-			var currentDate = {
-				year: currentTime.getFullYear(),
-				month: currentTime.getMonth() + 1,
-				day: currentTime.getDate(),
-				hours: currentTime.getHours(),
-				minutes: currentTime.getMinutes(),
-				seconds: currentTime.getSeconds(),
-			};
+			var currentDate = new Date().getTime();
+			var timeDiff = countdownDate - currentDate;
+			ms2Time(timeDiff);
 
-			var countdownH =
-				countdownDate.year +
-				"" +
-				countdownDate.month +
-				"" +
-				countdownDate.day +
-				"" +
-				countdownDate.hours;
-			var currentH =
-				currentDate.year +
-				"" +
-				currentDate.month +
-				"" +
-				currentDate.day +
-				"" +
-				currentDate.hours;
-
-			var stringH =
-				Number(countdownH + "." + countdownDate.minutes) -
-				Number(currentH + "." + currentDate.minutes);
-			var stringMin =
-				Number(
-					countdownH +
-						"" +
-						countdownDate.minutes +
-						"." +
-						countdownDate.seconds
-				) -
-				Number(
-					countdownH +
-						"" +
-						currentDate.minutes +
-						"." +
-						currentDate.seconds
-				);
-			var stringSec =
-				Number(countdownDate.seconds) - Number(currentDate.seconds);
-
-			var diffCountH = Math.trunc(stringH);
-			var diffCountMin = Math.trunc(stringMin);
-			var diffCountSec = Math.trunc(stringSec);
-			if (diffCountMin < 0) {
-				diffCountMin = 60 - Math.abs(stringMin);
-			}
-			if (diffCountSec < 0) {
-				diffCountSec = 60 - Math.abs(stringSec);
-			}
-
-			timerUpdate.hours = Math.trunc(diffCountH);
-			timerUpdate.minutes = Math.trunc(diffCountMin);
-			timerUpdate.seconds = Math.trunc(diffCountSec);
-
-			var checkH = timerUpdate.hours - 1;
-			var checkM = timerUpdate.minutes - 1;
-			var checkS = timerUpdate.seconds - 1;
-			if (checkH <= 0 && checkM <= 0 && checkS <= 0) {
+			if (
+				timerUpdate.hours <= 0 &&
+				timerUpdate.minutes <= 0 &&
+				timerUpdate.seconds <= 0
+			) {
 				lockRewards();
 			} else {
 				checkUnlocked();
@@ -1110,6 +987,29 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		} else {
 			unlockedStates = topicList.map(({ unlocked }) => unlocked);
 			setUnlockedTopics(unlockedStates);
+		}
+
+		checkTopicList();
+	}
+
+	function checkTopicList() {
+		for (var i = 0; i < unlockedStates.length; i++) {
+			if (unlockedStates[i] == false) {
+				rewardDisabled = false;
+				setDisabled(rewardDisabled);
+				break;
+			} else {
+				rewardDisabled = true;
+				setDisabled(rewardDisabled);
+			}
+		}
+
+		if (rewardDisabled && timerUpdate.hours <= refreshHours) {
+			refreshEnabled = true;
+			setRefresh(refreshEnabled);
+		} else {
+			refreshEnabled = false;
+			setRefresh(refreshEnabled);
 		}
 	}
 
@@ -1689,40 +1589,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							)}
 						</TouchableHighlight>
 
-						{!refresh ? (
-							<TouchableOpacity
-								activeOpacity={0.6}
-								style={
-									!rewardDisabled
-										? styles.bottomReward
-										: styles.bottomRewardDisabled
-								}
-								disabled={rewardDisabled}
-								onPress={openRewardedScreen}
-							>
-								{language == "eng" ? (
-									<Text
-										style={
-											!rewardDisabled
-												? styles.bottomRewardTxt
-												: styles.bottomRewardTxtDisabled
-										}
-									>
-										Unlock more
-									</Text>
-								) : (
-									<Text
-										style={
-											!rewardDisabled
-												? styles.bottomRewardTxt
-												: styles.bottomRewardTxtDisabled
-										}
-									>
-										Otključaj više
-									</Text>
-								)}
-							</TouchableOpacity>
-						) : (
+						{!disabled ? (
 							<TouchableOpacity
 								activeOpacity={0.6}
 								style={styles.bottomReward}
@@ -1730,10 +1597,43 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 							>
 								{language == "eng" ? (
 									<Text style={styles.bottomRewardTxt}>
-										Keep rewards
+										Unlock more
 									</Text>
 								) : (
 									<Text style={styles.bottomRewardTxt}>
+										Otključaj više
+									</Text>
+								)}
+							</TouchableOpacity>
+						) : (
+							<TouchableOpacity
+								activeOpacity={0.6}
+								style={
+									refresh
+										? styles.bottomReward
+										: styles.bottomRewardDisabled
+								}
+								disabled={!refresh}
+								onPress={openRewardedScreen}
+							>
+								{language == "eng" ? (
+									<Text
+										style={
+											refresh
+												? styles.bottomRewardTxt
+												: styles.bottomRewardTxtDisabled
+										}
+									>
+										Keep rewards
+									</Text>
+								) : (
+									<Text
+										style={
+											refresh
+												? styles.bottomRewardTxt
+												: styles.bottomRewardTxtDisabled
+										}
+									>
 										Zadrži otključano
 									</Text>
 								)}
@@ -1846,6 +1746,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						<View style={styles.inputFieldCont}>
 							<TextInput
 								style={styles.inputField}
+								selectionColor={colors.white}
 								onChangeText={(customPrompt) =>
 									customInputUpdate(customPrompt)
 								}
@@ -2011,6 +1912,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 						<View style={styles.inputFieldCont}>
 							<TextInput
 								style={styles.inputField}
+								selectionColor={colors.white}
 								onChangeText={(customPrompt) =>
 									customInputUpdate(customPrompt)
 								}
@@ -2154,6 +2056,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 					<View style={styles.presetInputFieldCont}>
 						<TextInput
 							style={styles.presetInputField}
+							selectionColor={colors.white}
 							onChangeText={(customPresetTitle) =>
 								setCustomPresetTitle(customPresetTitle)
 							}
@@ -2237,6 +2140,11 @@ function MainScreen() {
 
 	const refBg = useRef(null);
 
+	useEffect(() => {
+		checkConsent();
+		askForPermission();
+	}, []);
+
 	async function checkConsent() {
 		consentStatus = await AsyncStorage.getItem("consentStatus");
 		if (consentStatus == undefined || consentStatus == null) {
@@ -2247,11 +2155,6 @@ function MainScreen() {
 			setConsentOpen(consentStatus);
 		}
 	}
-
-	useEffect(() => {
-		checkConsent();
-		askForPermission();
-	}, []);
 
 	const openLanding = async (value) => {
 		var consentVal = value.toString();
