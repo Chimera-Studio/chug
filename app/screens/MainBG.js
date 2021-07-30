@@ -8,13 +8,14 @@ import { StyleSheet, Platform, View, Dimensions } from "react-native";
 import colors from "../config/colors";
 import Foam from "../assets/img/foam.svg";
 
-var animationFPS = 1000 / 60;
 var bubbleFPS;
 var bubbles30 = [];
 var bubbles50 = [];
 var bubbles30posY;
 var bubbles50posY;
 
+const fps = 60;
+const animationFPS = 1000 / fps;
 const bubblesOnScreen = 30;
 const maxBubbleWidth = 40;
 const minBubbleWidth = 20;
