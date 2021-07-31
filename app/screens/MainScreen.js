@@ -1009,16 +1009,21 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 	const [customPrompt, setCustomPrompt] = useState("");
 	const [customListMap, setCustomListMap] = useState(customListPrompts);
 
+	const [gamePrompt, setGamePrompt] = useState("");
+	const [againWait, setAgainWait] = useState(false);
+
 	const [alertShow, setAlertShow] = useState(false);
 	const [emptyPrompt, setEmptyPrompt] = useState(false);
 	const [emptyList, setEmptyList] = useState(false);
 	const [emptyGame, setEmptyGame] = useState(false);
+	const [keepAlert, setKeepAlert] = useState(false);
 	const [ruleAdded, setRuleAdded] = useState(false);
 	const [emptyCustom, setEmptyCustom] = useState(false);
 	const [presetSaved, setPresetSaved] = useState(false);
 	const [customModul, setCustomModul] = useState(false);
 	const [presetModul, setPresetModul] = useState(false);
 	const [presetModulAlert, setPresetModulAlert] = useState(false);
+
 	const fadeAlert = useState(new Animated.Value(0))[0];
 	const fadeCustomModul = useState(new Animated.Value(0))[0];
 	const fadePresetModul = useState(new Animated.Value(0))[0];
@@ -1036,6 +1041,21 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 				useNativeDriver: true,
 			}).start();
 		}, 2700);
+	}
+
+	function alertFadeKeep() {
+		Animated.timing(fadeAlert, {
+			toValue: 1,
+			duration: 300,
+			useNativeDriver: true,
+		}).start();
+		setTimeout(function () {
+			Animated.timing(fadeAlert, {
+				toValue: 0,
+				duration: 300,
+				useNativeDriver: true,
+			}).start();
+		}, 4700);
 	}
 
 	const showAlert = {
@@ -1158,9 +1178,6 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			setRefresh(refreshEnabled);
 		}
 	}
-
-	const [gamePrompt, setGamePrompt] = useState("");
-	const [againWait, setAgainWait] = useState(false);
 
 	const [fillAgain, setFillAgain] = useState(new Animated.Value(0));
 	function fillEffect() {
@@ -1386,6 +1403,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 			setEmptyPrompt(false);
 			setEmptyList(false);
 			setEmptyGame(false);
+			setKeepAlert(false);
 			setEmptyCustom(false);
 			setPresetSaved(false);
 		}, 3000);
@@ -1628,6 +1646,16 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 		gameCallback(false);
 	};
 
+	const keepDisabled = () => {
+		setKeepAlert(true);
+		setAlertShow(true);
+		alertFadeKeep();
+		setTimeout(function () {
+			setAlertShow(false);
+			setKeepAlert(false);
+		}, 5000);
+	};
+
 	const openRewardedScreen = () => {
 		presetOpen = false;
 		customOpen = false;
@@ -1781,8 +1809,9 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 										? styles.bottomReward
 										: styles.bottomRewardDisabled
 								}
-								disabled={!refresh}
-								onPress={openRewardedScreen}
+								onPress={
+									refresh ? openRewardedScreen : keepDisabled
+								}
 							>
 								{language == "eng" ? (
 									<Text
@@ -2233,6 +2262,24 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 					{language == "hrv" && emptyGame ? (
 						<Text style={styles.alertText}>
 							Moraš odabrati barem jednu kategoriju!
+						</Text>
+					) : null}
+					{language == "eng" && keepAlert ? (
+						<Text style={styles.alertText}>
+							This will become available{" "}
+							<Text style={{ color: colors.green }}>6h</Text>{" "}
+							before
+							{"\n"}
+							the timer runs out.
+						</Text>
+					) : null}
+					{language == "hrv" && keepAlert ? (
+						<Text style={styles.alertText}>
+							Ovaj gumb će biti omogućen{" "}
+							<Text style={{ color: colors.green }}>6h</Text>{" "}
+							prije
+							{"\n"}
+							nego li tajmer .
 						</Text>
 					) : null}
 				</Animated.View>
