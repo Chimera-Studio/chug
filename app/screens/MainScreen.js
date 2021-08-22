@@ -190,18 +190,6 @@ function ms2Time(value) {
 	timerUpdate.seconds = pad(secs);
 }
 
-async function askForPermission() {
-	const { granted } = await getPermissionsAsync();
-	if (granted) {
-		personalisedAds = true;
-	} else {
-		const { status } = await requestPermissionsAsync();
-		if (status === "granted") {
-			personalisedAds = true;
-		}
-	}
-}
-
 var date;
 function getDate() {
 	var today = new Date();
@@ -2414,6 +2402,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
 
 function MainScreen() {
 	const windowHeight = useWindowDimensions().height;
+	const [adsShow, setAdsShow] = useState(false);
 	const [consentOpen, setConsentOpen] = useState(true);
 	const [gameOpen, setGameOpen] = useState(false);
 	const [rewardedOpen, setRewardedOpen] = useState(false);
@@ -2448,8 +2437,26 @@ function MainScreen() {
 	useEffect(() => {
 		initialFadeIn();
 		checkConsent();
-		askForPermission();
+		setTimeout(function () {
+			askForPermission();
+		}, 1000);
 	}, []);
+
+	async function askForPermission() {
+		const { granted } = await getPermissionsAsync();
+		if (granted) {
+			personalisedAds = true;
+			setAdsShow(true);
+		} else {
+			const { status } = await requestPermissionsAsync();
+			if (status === "granted") {
+				personalisedAds = true;
+				setAdsShow(true);
+			} else {
+				setAdsShow(true);
+			}
+		}
+	}
 
 	async function checkConsent() {
 		consentStatus = await AsyncStorage.getItem("consentStatus");
@@ -2530,7 +2537,7 @@ function MainScreen() {
 			) : null}
 
 			<View style={styles.ads}>
-				{!rewardedOpen && !consentOpen ? (
+				{adsShow && !rewardedOpen && !consentOpen ? (
 					<AdMobBanner
 						bannerSize="smartBannerPortrait"
 						adUnitID={

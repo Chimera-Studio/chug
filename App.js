@@ -6,7 +6,7 @@ import MainScreen from "./app/screens/MainScreen";
 
 function App() {
 	let [fontsLoaded] = useFonts({
-		PrimaryFont: require("./app/assets/fonts/LondrinaSolid.otf"),
+		PrimaryFont: require("./app/assets/fonts/LondrinaSolid_Hrv.otf"),
 		SecondaryFont: require("./app/assets/fonts/RobotoBlack.ttf"),
 	});
 
