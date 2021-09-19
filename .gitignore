@@ -14,3 +14,4 @@ web-build/
 
 # Privacy
 app.json
+app/tokens/
