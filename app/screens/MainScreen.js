@@ -30,7 +30,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import colors from "../config/colors";
 import styles from "../config/styles";
-import admob from "./tokens";
+import admob from "../tokens";
 
 import Home from "../assets/img/home.svg";
 import ListArrow from "../assets/img/arrow.svg";
@@ -94,7 +94,7 @@ var travel_hrv = hrv_travel;
 var animals_hrv = hrv_animals;
 
 const countdownHours = 24;
-const refreshHours = 6;
+const refreshHours = 5;
 
 var game_list = new Array();
 var custom_list = new Array();
@@ -108,8 +108,8 @@ var topicList = [
     unlocked: true,
   },
   {
-    nameEng: "Genaral",
-    nameHrv: "Klasika",
+    nameEng: "General",
+    nameHrv: "Klasik",
     value: "general",
     selected: true,
     unlocked: true,
@@ -506,9 +506,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
     setLoadRewarded(true);
 
     await AdMobRewarded.setAdUnitID(
-      Platform.OS === "ios"
-        ? admob.rewarded.ios_test
-        : admob.rewarded.android_test
+      Platform.OS === "ios" ? admob.rewarded.ios : admob.rewarded.android
     ); /* Live ads = true, 1. iOS, 2. Android */
     await AdMobRewarded.requestAdAsync();
     await AdMobRewarded.showAdAsync();
@@ -583,13 +581,9 @@ export const RewardedScreen = ({ rewardedCallback }) => {
           <Text style={styles.countdownTimer}>00:00:00</Text>
         )}
         {language == "eng" ? (
-          <Text style={styles.countdownTxt}>
-            till the unlocked topics are locked
-          </Text>
+          <Text style={styles.countdownTxt}>untill the topics are locked</Text>
         ) : (
-          <Text style={styles.countdownTxt}>
-            do zaključavanja otključanih kategorija
-          </Text>
+          <Text style={styles.countdownTxt}>do zaključavanja kategorija</Text>
         )}
       </View>
 
@@ -2361,9 +2355,7 @@ function MainScreen() {
           <AdMobBanner
             bannerSize="smartBannerPortrait"
             adUnitID={
-              Platform.OS === "ios"
-                ? admob.banners.ios_test
-                : admob.banners.android_test
+              Platform.OS === "ios" ? admob.banners.ios : admob.banners.android
             } /* Live ads = true, 1. iOS, 2. Android */
             servePersonalizedAds={personalisedAds}
           />
