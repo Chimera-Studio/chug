@@ -581,7 +581,7 @@ export const RewardedScreen = ({ rewardedCallback }) => {
           <Text style={styles.countdownTimer}>00:00:00</Text>
         )}
         {language == "eng" ? (
-          <Text style={styles.countdownTxt}>untill the topics are locked</Text>
+          <Text style={styles.countdownTxt}>until the topics are locked</Text>
         ) : (
           <Text style={styles.countdownTxt}>do zaključavanja kategorija</Text>
         )}
