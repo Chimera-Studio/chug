@@ -25,6 +25,7 @@ import {
   requestPermissionsAsync,
   getPermissionsAsync,
 } from "expo-ads-admob";
+import * as Device from "expo-device";
 import * as StoreReview from "expo-store-review";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -133,63 +134,63 @@ var topicList = [
     nameHrv: "Auti",
     value: "cars",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Movies",
     nameHrv: "Filmovi",
     value: "movies",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Music",
     nameHrv: "Glazba",
     value: "music",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Gaming",
     nameHrv: "Gaming",
     value: "gaming",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Fashion",
     nameHrv: "Moda",
     value: "fashion",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Occupation",
     nameHrv: "Zanimanje",
     value: "occupation",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Education",
     nameHrv: "Obrazovanje",
     value: "education",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Travel",
     nameHrv: "Putovanje",
     value: "travel",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
   {
     nameEng: "Animals",
     nameHrv: "Životinje",
     value: "animals",
     selected: false,
-    unlocked: false,
+    unlocked: true,
   },
 ];
 
@@ -224,11 +225,21 @@ var consentStatus = true;
 var languagePref = "eng";
 var personalisedAds = false;
 
+const emulator = Device.isDevice;
+const admob_ios = {
+  banner: emulator ? admob.banner.ios : admob.banner.ios_test,
+  rewarded: emulator ? admob.rewarded.ios : admob.rewarded.ios_test,
+};
+const admob_android = {
+  banner: emulator ? admob.banner.android : admob.banner.android_test,
+  rewarded: emulator ? admob.rewarded.android : admob.rewarded.android_test,
+};
+
 var deviceWidth = Dimensions.get("screen").width;
 var useWidth = Math.round(deviceWidth + deviceWidth * 0.06);
 
 function shuffle(e) {
-  for (var t, l, n = e.length; 0 !== n; )
+  for (var t, l, n = e.length; 0 !== n;)
     (l = Math.floor(Math.random() * n)),
       (t = e[(n -= 1)]),
       (e[n] = e[l]),
@@ -506,8 +517,8 @@ export const RewardedScreen = ({ rewardedCallback }) => {
     setLoadRewarded(true);
 
     await AdMobRewarded.setAdUnitID(
-      Platform.OS === "ios" ? admob.rewarded.ios : admob.rewarded.android
-    ); /* Live ads = true, 1. iOS, 2. Android */
+      Platform.OS === "ios" ? admob_ios.rewarded : admob_android.rewarded
+    ); /* 1. iOS, 2. Android */
     await AdMobRewarded.requestAdAsync();
     await AdMobRewarded.showAdAsync();
   }
@@ -1621,8 +1632,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
                     !unlockedTopics[index]
                       ? styles.topicItemDisabled
                       : !selectedTopics[index]
-                      ? styles.topicItem
-                      : styles.topicItemSelected
+                        ? styles.topicItem
+                        : styles.topicItemSelected
                   }
                   key={index}
                   disabled={!topic.unlocked}
@@ -1636,8 +1647,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
                         !unlockedTopics[index]
                           ? styles.topicItemTxtDisabled
                           : !selectedTopics[index]
-                          ? styles.topicItemTxt
-                          : styles.topicItemTxtSelected
+                            ? styles.topicItemTxt
+                            : styles.topicItemTxtSelected
                       }
                     >
                       {topic.nameEng}
@@ -1648,8 +1659,8 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
                         !unlockedTopics[index]
                           ? styles.topicItemTxtDisabled
                           : !selectedTopics[index]
-                          ? styles.topicItemTxt
-                          : styles.topicItemTxtSelected
+                            ? styles.topicItemTxt
+                            : styles.topicItemTxtSelected
                       }
                     >
                       {topic.nameHrv}
@@ -1679,6 +1690,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
               )}
             </TouchableHighlight>
 
+            {/*
             {!disabled ? (
               <TouchableOpacity
                 activeOpacity={0.6}
@@ -1722,6 +1734,7 @@ export const GameScreen = ({ gameCallback, rewardedCallback }) => {
                 )}
               </TouchableOpacity>
             )}
+            */}
           </View>
         </Animated.View>
         <Animated.View style={[styles.gamePageConfig, movePreset, fadeConfig]}>
@@ -2355,7 +2368,7 @@ function MainScreen() {
           <AdMobBanner
             bannerSize="smartBannerPortrait"
             adUnitID={
-              Platform.OS === "ios" ? admob.banners.ios : admob.banners.android
+              Platform.OS === "ios" ? admob_ios.banner : admob_android.banner
             } /* Live ads = true, 1. iOS, 2. Android */
             servePersonalizedAds={personalisedAds}
           />
